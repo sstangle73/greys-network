@@ -97,6 +97,19 @@ check('collapse button is a direct child of the rail', toggle.parentElement === 
       `parent is ${toggle.parentElement && toggle.parentElement.className}`);
 check('collapse button is outside the scrolling body', !railBody.contains(toggle));
 
+// The two views have to reach each other, by filenames that resolve both on the
+// live site and in a local build. The table used to link to index.html, which
+// only exists once CI has renamed it.
+const chartHtml = fs.readFileSync('greys_network.html', 'utf8');
+check('chart links to the table', /href="table\.html"/.test(chartHtml));
+if (fs.existsSync('table.html')) {
+  const tableHtml = fs.readFileSync('table.html', 'utf8');
+  check('table links back to the chart', /href="greys_network\.html"/.test(tableHtml));
+  check('table does not link to a CI-only filename', !/href="index\.html"/.test(tableHtml));
+} else {
+  console.log('  --   table.html not built; run build_table.py');
+}
+
 const css = fs.readFileSync('greys_network.html', 'utf8')
   .split('</style>')[0];
 check('rail height is capped', /\.rail\s*\{[^}]*max-height/s.test(css));

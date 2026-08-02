@@ -149,7 +149,8 @@ TEMPLATE = """<!DOCTYPE html>
 <main>
   <h1>Grey's Anatomy Universe &mdash; every relationship</h1>
   <p class="lede">
-    A plain-text view of the same dataset behind <a href="index.html">the chart</a>:
+    A plain-text view of the same dataset behind
+    <a href="greys_network.html">the chart</a>:
     {n_romantic} romantic ties and {n_family} parent links across three shows.
     {n_cited} romantic ties carry a direct episode citation.
   </p>

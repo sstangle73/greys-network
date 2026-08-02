@@ -79,6 +79,10 @@ pages:
     - python build_visualization.py --indir .
     - mkdir -p public
     - cp greys_network.html public/index.html
+    # Published under its real name as well, so the cross-links between the
+    # chart and the table resolve identically on the live site and in a local
+    # build. The table linking to index.html worked only on Pages.
+    - cp greys_network.html public/greys_network.html
     - cp table.html public/table.html
     - cp edges.csv nodes.csv shows.csv audit_tracker.csv citations.csv public/
     - if [ -d portraits ]; then cp -r portraits public/; fi

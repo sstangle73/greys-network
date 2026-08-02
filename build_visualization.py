@@ -171,6 +171,11 @@ TEMPLATE = r"""<!DOCTYPE html>
     font-size: 11px; color: var(--muted); letter-spacing: .06em;
   }
   .trace { display: block; margin-top: 10px; height: 14px; width: min(420px, 60vw); }
+  /* In the masthead rather than buried in the credits: the table is the
+     accessible form of this page, so it has to be reachable without first
+     operating an SVG force graph to find it. */
+  .alt-view { color: var(--dating); text-decoration: none; border-bottom: 1px solid currentColor; }
+  .alt-view:hover { color: var(--bone); }
 
   /* --- controls ---------------------------------------------------------- */
   .rail {
@@ -524,7 +529,8 @@ TEMPLATE = r"""<!DOCTYPE html>
 
 <header>
   <h1>Grey Sloan Memorial</h1>
-  <div class="sub">Relationship chart &middot; <span id="tally">__NODE_COUNT__ people, __LINK_COUNT__ connections</span></div>
+  <div class="sub">Relationship chart &middot; <span id="tally">__NODE_COUNT__ people, __LINK_COUNT__ connections</span>
+    &middot; <a class="alt-view" href="table.html">Table view</a></div>
   <svg class="trace" viewBox="0 0 420 14" preserveAspectRatio="none" aria-hidden="true">
     <path d="M0 7 H84 l6 -6 l7 12 l6 -9 l5 3 H186 l6 -6 l7 12 l6 -9 l5 3 H420"
           fill="none" stroke="#1F5457" stroke-width="1.4"/>
