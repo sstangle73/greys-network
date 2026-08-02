@@ -808,10 +808,52 @@ def validate(edges: pd.DataFrame, nodes: pd.DataFrame) -> None:
     twice = {tuple(sorted(p)) for p in pairs if pairs.count(p) > 1}
     assert not twice, f"Pair with more than one romantic edge: {sorted(twice)}"
 
+    _check_citations(romantic)
+
     parented = set(edges.loc[edges["Relationship_Type"] == "Parent", "Target"])
     orphans = CHILDREN - parented
     if orphans:
         print(f"  ! Warning - child with no Parent edge: {sorted(orphans)}")
+
+
+def _check_citations(romantic) -> None:
+    """No citation may predate the season the tie is recorded as starting in.
+
+    Deliberately narrow. The first version of this check demanded a code in the
+    tie's FIRST season and produced fourteen false positives, because
+    citations.csv records evidence for the whole tie -- Alex and Jo start in S9
+    and are cited to 14x24, which is their wedding. Both are correct.
+
+    What is never legitimate is evidence EARLIER than the recorded start: either
+    the start is dated too late, or the citation belongs to a different tie.
+    That is the Mark-and-Teddy error, which sat in this dataset as season 7 with
+    a 6x22 citation attached to it.
+    """
+    import csv
+    import re
+    path = "citations.csv"
+    if not os.path.exists(path):
+        return
+
+    season_of = {frozenset({s, t}): int(fs) for s, t, fs in
+                 zip(romantic["Source"], romantic["Target"], romantic["First_Season"])}
+    code = re.compile(r"\b(\d{1,2})x(\d{2})\b")
+
+    problems = []
+    with open(path, encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            pair = frozenset({row["Source"], row["Target"]})
+            if row.get("Confidence") != "cited" or pair not in season_of:
+                continue
+            seasons = {int(m[0]) for m in code.findall(row.get("Citation") or "")}
+            early = {s for s in seasons if s < season_of[pair]}
+            if early:
+                problems.append(
+                    f"{row['Source']} & {row['Target']}: starts S{season_of[pair]}, "
+                    f"but cited to {sorted(early)}")
+
+    assert not problems, ("Citation predates the tie it belongs to:\n  "
+                          + "\n  ".join(problems))
 
 
 def build_shows() -> pd.DataFrame:
