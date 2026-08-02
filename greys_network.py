@@ -690,6 +690,23 @@ def build_edges() -> pd.DataFrame:
         for row in df.itertuples()
     ]
 
+    # Same idea for the other end, and it errs the OPPOSITE way. An unknown
+    # start is held until the season finishes, so nothing appears early. An
+    # unknown END is treated as episode 1 of the season -- no. It is treated as
+    # the season's close, so the tie stays on screen for the whole season rather
+    # than reading as finished from the opener.
+    #
+    # This matters more than it sounds: Derek and Addison divorce late in season
+    # 3, and an end on 3x01 told a viewer the outcome twenty episodes early.
+    df["End_Episode_Known"] = [
+        1 if (row.Last_Season == ""
+              or int(row.Last_Episode or 1) > 1
+              # A fling that begins and ends in one episode has a real end.
+              or (row.First_Season == row.Last_Season
+                  and row.First_Episode == row.Last_Episode)) else 0
+        for row in df.itertuples()
+    ]
+
     def outcome(row, field):
         split = DIVORCES.get(frozenset({row.Source, row.Target}))
         if not split or row.Relationship_Type != "Married":

@@ -81,6 +81,29 @@ if (unknown) {
   console.log('  --   no unknown-episode tie to check');
 }
 
+// An unknown END is held to the close of its season, so a couple stays together
+// for the whole of it rather than reading as finished from the opener. The
+// mirror of the unknown-start rule, erring the opposite way on purpose.
+const endUnknown = d3.selectAll('.link').data()
+  .find(l => l.eek === 0 && l.show === 'GA' && l.ls && l.ls < 20 && l.ls > l.s);
+if (endUnknown) {
+  const midSeason = () => {
+    gaSeason.value = endUnknown.ls; gaEpisode.value = 2; fire(gaSeason, 'input');
+    const paths = [...doc.querySelectorAll('.link')];
+    const data = d3.selectAll('.link').data();
+    const i = data.indexOf(endUnknown);
+    return paths[i] && paths[i].getAttribute('stroke-opacity');
+  };
+  // Still current early in its final season: full-weight stroke, not the faded
+  // one used for ties that are over.
+  const op = parseFloat(midSeason());
+  check(`unknown end still current early in its season `
+        + `(${endUnknown.source.id} & ${endUnknown.target.id}, opacity ${op})`,
+        op > 0.5, true);
+} else {
+  console.log('  --   no unknown-end tie to check');
+}
+
 // Switching a show off removes its ties whatever the other clocks say.
 const s19 = doc.getElementById('on-S19'); s19.checked = false; fire(s19, 'change');
 check('Station 19 switched off hides its tie',

@@ -83,6 +83,7 @@ def load_graph(indir: str) -> dict:
             "show": row.Show,
             "reveals": unpack(row.Reveals),
             "ek": int(row.Episode_Known),
+            "eek": int(row.End_Episode_Known),
             "s": int(row.First_Season),
             "e": int(row.First_Episode),
             "ls": as_int(row.Last_Season),
@@ -826,7 +827,18 @@ function displayType(l) {
 const divorced = l => l.split && wed(l) && seen(l.show, l.ss, l.se);
 // Over, as of where the viewer is. A relationship that ends in a later season
 // is still going from their point of view.
-const over = l => l.ls !== null && seen(l.show, l.ls, l.le);
+//
+// eek=0 means the end season is right but the episode is unknown. Those are
+// held to the CLOSE of that season, so the pair stay together for the whole of
+// it rather than reading as finished from the opener -- the mirror of how an
+// unknown start is held. Derek and Addison divorce late in season 3, and an end
+// on 3x01 announced the outcome twenty episodes early.
+function over(l) {
+  if (l.ls === null) return false;
+  if (l.eek) return seen(l.show, l.ls, l.le);
+  const meta = SHOW_BY_KEY[l.show];
+  return seen(l.show, l.ls, meta ? meta.episodes : 27);
+}
 
 // THE predicate for "is this link on screen". Module scope on purpose: it used
 // to live inside applyCutoff(), so the stats panel and the path tracer each
