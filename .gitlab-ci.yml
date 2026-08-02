@@ -107,6 +107,10 @@ drift:
     - pip install --quiet pandas
   script:
     - python greys_network.py --outdir .
+    # Non-blocking on purpose: some citations legitimately name an episode
+    # where one partner is off screen (a divorce discussed without the ex-
+    # spouse present), so this reports rather than gates.
+    - python verify_citations.py || true
     - python wiki_harvest.py drift
   artifacts:
     when: always
