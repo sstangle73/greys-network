@@ -5,7 +5,13 @@ An interactive chart of every romantic and parental tie across **Grey's Anatomy*
 between 183 characters, modelled so it can be replayed at any point in any of
 the three shows.
 
-**[View the chart →](https://sstangle73.gitlab.io/greys-network/)**
+**[View the chart →](https://greys-network-4bb08f.gitlab.io/)**
+
+<sub>Rebuilt from source by CI on every push, so the live page can never drift
+from the data. The datasets are published alongside it:
+[edges.csv](https://greys-network-4bb08f.gitlab.io/edges.csv) ·
+[nodes.csv](https://greys-network-4bb08f.gitlab.io/nodes.csv) ·
+[shows.csv](https://greys-network-4bb08f.gitlab.io/shows.csv)</sub>
 
 ## The point of it
 
