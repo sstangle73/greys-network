@@ -5,7 +5,7 @@
   "description": "Grey's Anatomy relationship network - dataset and interactive chart",
   "scripts": {
     "build": "python greys_network.py --outdir . && python build_visualization.py --indir .",
-    "test": "node tests/paintcheck.mjs && node tests/runtime.mjs && node tests/crossshow.mjs"
+    "test": "node tests/paintcheck.mjs && node tests/runtime.mjs && node tests/crossshow.mjs && node tests/mobile.mjs"
   },
   "dependencies": {
     "jsdom": "^24.0.0",

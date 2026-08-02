@@ -169,6 +169,20 @@ TEMPLATE = r"""<!DOCTYPE html>
     width: 232px; padding: 16px;
     background: rgba(16,57,61,.92); border: 1px solid var(--rule);
     backdrop-filter: blur(6px);
+    /* The rail is anchored to its BOTTOM edge and grows upward. With enough
+       content its top -- including the collapse button -- rises past the top of
+       the viewport, where nothing can reach it and you are stranded inside the
+       panel. Going from one cutoff block to three, plus the trace form, was
+       enough to cross that line. Cap the height and scroll the body instead. */
+    display: flex; flex-direction: column;
+    max-height: calc(100vh - 48px);
+  }
+  /* Never scrolls away: it is the only way back out. */
+  .rail-toggle { flex: 0 0 auto; }
+  .rail-body {
+    overflow-y: auto; min-height: 0;
+    overscroll-behavior: contain;      /* don't scroll the page behind it */
+    -webkit-overflow-scrolling: touch;
   }
   .rail h2 {
     margin: 0 0 10px; font-family: 'IBM Plex Mono', monospace; font-weight: 500;
@@ -221,11 +235,21 @@ TEMPLATE = r"""<!DOCTYPE html>
     margin-top: 7px; font-family: 'IBM Plex Mono', monospace;
     font-size: 10px; line-height: 1.5; color: var(--fling);
   }
-  #search {
+  #search, .trace-form input {
     width: 100%; margin-bottom: 14px; padding: 8px 10px;
     background: var(--ground); border: 1px solid var(--rule); color: var(--bone);
     font-family: 'IBM Plex Mono', monospace; font-size: 12px;
   }
+  .trace-form input { margin-bottom: 0; }
+  .credit {
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule);
+    font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; line-height: 1.7;
+    color: var(--muted);
+  }
+  .credit a { color: var(--dating); text-decoration: none; }
+  .credit a:hover { text-decoration: underline; }
+  .trace-form input:focus { outline: 2px solid var(--dating); outline-offset: 1px; }
+  .trace-form input::placeholder { color: var(--muted); }
   #search:focus { outline: 2px solid var(--dating); outline-offset: 1px; }
   #search::placeholder { color: var(--muted); }
   .key { display: flex; flex-direction: column; gap: 7px; }
@@ -325,7 +349,10 @@ TEMPLATE = r"""<!DOCTYPE html>
     font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
   }
   @media (max-width: 720px) {
-    .rail { left: 12px; right: 12px; bottom: 12px; width: auto; padding: 12px; }
+    .rail {
+      left: 12px; right: 12px; bottom: 12px; width: auto; padding: 12px;
+      max-height: calc(100vh - 24px);
+    }
     .rail-toggle { display: block; }
     .rail.collapsed .rail-body { display: none; }
     .rail.collapsed { padding: 12px; }
@@ -417,6 +444,12 @@ TEMPLATE = r"""<!DOCTYPE html>
       <span><i class="dot" style="background:#E8EDE9"></i> Alive</span>
       <span><i class="dot" style="background:transparent;border:2px solid #7FA3A0"></i> Deceased</span>
       <span><i class="dot" style="background:#4FC3D9;width:7px;height:7px"></i> Child</span>
+    </div>
+    <div class="credit">
+      Inspired by <a href="https://itsdatadana.com/" target="_blank" rel="noopener noreferrer">Dana&rsquo;s romantic web</a>,
+      whose scope rules this dataset follows.
+      Facts from the <a href="https://greysanatomy.fandom.com/" target="_blank" rel="noopener noreferrer">Grey&rsquo;s Anatomy Universe Wiki</a> (CC BY-SA).
+      <a href="https://gitlab.com/sstangle73/greys-network" target="_blank" rel="noopener noreferrer">Source &amp; data</a>.
     </div>
   </div>
 </div>

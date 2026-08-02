@@ -91,7 +91,20 @@ and the partners deliberately excluded for never appearing on screen.
 Where a date is genuinely uncertain it is dated **late** on purpose. A too-late
 date hides something you have already seen; a too-early one spoils you.
 
-## Sources & licence
+## Sources & credit
+
+**The idea came from Dana's "romantic web" infographic**
+([itsdatadana.com](https://itsdatadana.com/)) — a hand-built chart of the
+Grey's romantic network, accurate through Season 18. This project is a
+descendant of it, and owes it more than inspiration: **Dana's scope rules are
+the ones this dataset is built on.** A tie counts if the pair had sex or dated
+beyond one date, *and* both people appear in a present-day storyline.
+
+Those two clauses did most of the real work. They are why unrequited crushes,
+single kisses and off-screen spouses are excluded, and they settled dozens of
+judgement calls during the audit that the wiki alone left ambiguous — the wiki
+files a one-sided crush under "Romantic" just the same as a marriage. Every
+rejected tie in this dataset was rejected against Dana's rules.
 
 Relationship facts come from the [Grey's Anatomy Universe
 Wiki](https://greysanatomy.fandom.com/), which is licensed
