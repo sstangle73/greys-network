@@ -71,6 +71,13 @@ Last_Season/Episode     when it ended (blank = still together)
 Reveals                 what OTHER shows showed, e.g. "GA:16x14:Dating"
 ```
 
+**Episode precision is per-tie.** Where `citations.csv` carries a code for a
+tie's first season, `First_Episode` is that episode; otherwise it falls back to
+episode 1. Currently 103 of 165 romantic ties have a real episode. The fallback
+was invisible on a static chart and obvious the moment timeline playback landed,
+because everything without one pops in on the season boundary — worth
+remembering that a display feature can be the thing that audits your data.
+
 `Show` is the tie's home show and every stage date is in that show's seasons.
 `Reveals` is how a tie reaches a viewer who doesn't watch the home show: a tie
 is on screen once its home show has reached it **or** any other enabled show has
