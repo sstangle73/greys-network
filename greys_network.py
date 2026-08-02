@@ -52,26 +52,42 @@ IMAGE_PLACEHOLDER = ""  # swap for "https://placehold.co/200x200" if you prefer
 # matters as much as the season: Station 19 season 3 is not Grey's season 3, and
 # without it a spinoff death would black a character out thirteen years early.
 DEATHS = {
-    "Denny Duquette": ("GA", 2, 1),
-    "Ellis Grey": ("GA", 3, 1),
-    "Susan Grey": ("GA", 3, 1),
+    # Episode numbers read off the episode pages, where the number is in the
+    # infobox. These sat on episode 1 until now, which marked people dead from
+    # the FIRST episode of the season they die in -- Denny from 2x01 when he
+    # actually dies in the finale. The most damaging default in the dataset.
+    #
+    # Where injury and death are different episodes, this records the
+    # PRONOUNCEMENT: George is hit by a bus in 5x24 and declared brain dead in
+    # 6x01; Mark crashes in 8x24 and comes off life support in 9x01.
+    "Denny Duquette": ("GA", 2, 27),
+    "Ellis Grey": ("GA", 3, 17),
+    "Susan Grey": ("GA", 3, 23),
     "George O'Malley": ("GA", 6, 1),
-    "Henry Burton": ("GA", 8, 1),
-    "Lexie Grey": ("GA", 8, 1),
+    "Henry Burton": ("GA", 8, 9),
+    "Lexie Grey": ("GA", 8, 24),
     "Mark Sloan": ("GA", 9, 1),
-    "Adele Webber": ("GA", 9, 1),
-    "Derek Shepherd": ("GA", 11, 1),
-    "Thatcher Grey": ("GA", 14, 1),
-    "Paul Stadler": ("GA", 14, 1),
-    "Andrew DeLuca": ("GA", 17, 1),
+    "Adele Webber": ("GA", 9, 10),
+    "Derek Shepherd": ("GA", 11, 21),
+    "Paul Stadler": ("GA", 14, 10),
+    # Season 14 was simply wrong: Thatcher appears in no S14 episode at all.
+    # He dies in 15x11 "The Winner Takes It All".
+    "Thatcher Grey": ("GA", 15, 11),
+    "Andrew DeLuca": ("GA", 17, 7),
     "Monica Beltran": ("GA", 22, 1),
     "Heather Parker": ("PP", 3, 10),
     "Dell Parker": ("PP", 3, 23),
     "Ryan Kerrigan": ("PP", 5, 8),
+    # Off screen -- he has the heart attack alone and Violet identifies him.
     "Pete Wilder": ("PP", 6, 1),
-    "Ryan Tanner": ("S19", 3, 3),
     "Lucas Ripley": ("S19", 2, 15),
+    "Ryan Tanner": ("S19", 3, 3),
     "Pruitt Herrera": ("S19", 3, 12),
+    # Crosses shows: the explosion and CPR are S19 5x05, the pronouncement is
+    # Grey's 18x05. Kept on the Station 19 clock deliberately -- a Station 19
+    # viewer plainly knows he is dead at the end of 5x05, and dating it to the
+    # Grey's crossover would leave him alive forever for anyone watching only
+    # the show he belongs to.
     "Dean Miller": ("S19", 5, 5),
     "Michael Dixon": ("S19", 6, 18),
 }
