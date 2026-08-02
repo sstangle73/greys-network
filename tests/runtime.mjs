@@ -5,7 +5,7 @@ import * as d3 from 'd3';
 const html = fs.readFileSync('greys_network.html', 'utf8');
 const script = html.match(/<script>\n(const DATA.*?)\n<\/script>/s)[1];
 
-const dom = new JSDOM(html.replace(/<script[\s\S]*?<\/script>/g, ''), { pretendToBeVisual: true });
+const dom = new JSDOM(html.replace(/<script[\s\S]*?<\/script>/g, ''), { pretendToBeVisual: true, url: 'https://localhost/greys/' });
 const { window } = dom;
 
 // Wire the globals the page expects, then execute its script for real.
@@ -88,6 +88,60 @@ if (!errors.length) {
                                       g.dispatchEvent(new window.MouseEvent('click', { bubbles: true })); }],
     ['slide while selected',  () => { doc.getElementById('season').value = 5; fire(doc.getElementById('season'), 'input'); }],
     ['close panel',           () => fire(doc.getElementById('close'), 'click')],
+    // Trace a connection. The route must be computed over the links actually on
+    // screen -- routing through an unaired tie would leak what the cutoff hides.
+    ['trace finds a route',   ()=>{doc.getElementById('season').value=22;
+                                   fire(doc.getElementById('season'),'input');
+                                   doc.getElementById('from').value='Meredith Grey';
+                                   doc.getElementById('to').value='Cristina Yang';
+                                   fire(doc.getElementById('trace-go'),'click');
+                                   const out=doc.getElementById('trace-out').textContent;
+                                   if(!/step/.test(out)) throw new Error(`no route: ${out}`);
+                                   const lit=doc.querySelectorAll('.link.on-path').length;
+                                   if(!lit) throw new Error('route found but nothing highlighted');}],
+    // The romantic graph spans all three shows: Meredith reaches Private
+    // Practice through Addison. If a future edit stranded a show, this breaks.
+    ['trace crosses shows',   ()=>{doc.getElementById('from').value='Meredith Grey';
+                                   doc.getElementById('to').value='Violet Turner';
+                                   fire(doc.getElementById('trace-go'),'click');
+                                   const out=doc.getElementById('trace-out').textContent;
+                                   if(!/step/.test(out)) throw new Error(`shows are disconnected: ${out}`);}],
+    // Bailey is genuinely unreachable from Meredith -- her only partners have no
+    // other ties. A "no route" answer has to be honest, not a silent blank.
+    ['trace reports no route',()=>{doc.getElementById('from').value='Meredith Grey';
+                                   doc.getElementById('to').value='Miranda Bailey';
+                                   fire(doc.getElementById('trace-go'),'click');
+                                   const out=doc.getElementById('trace-out').textContent;
+                                   if(!/No route/i.test(out)) throw new Error(`expected no route, got: ${out}`);}],
+    ['trace resolves partial names',()=>{doc.getElementById('from').value='meredith grey';
+                                   doc.getElementById('to').value='cristina';
+                                   fire(doc.getElementById('trace-go'),'click');
+                                   const out=doc.getElementById('trace-out').textContent;
+                                   if(/no one on screen/.test(out)) throw new Error(out);}],
+    ['trace reports an unknown name',()=>{doc.getElementById('from').value='Nobody McNobody';
+                                   doc.getElementById('to').value='Meredith Grey';
+                                   fire(doc.getElementById('trace-go'),'click');
+                                   const out=doc.getElementById('trace-out').textContent;
+                                   if(!/no one on screen/i.test(out)) throw new Error(`expected a miss, got: ${out}`);
+                                   if(doc.querySelectorAll('.link.on-path').length)
+                                     throw new Error('failed trace left a route highlighted');}],
+    ['cutoff change clears the route',()=>{doc.getElementById('from').value='Meredith Grey';
+                                   doc.getElementById('to').value='Miranda Bailey';
+                                   fire(doc.getElementById('trace-go'),'click');
+                                   doc.getElementById('season').value=3;
+                                   fire(doc.getElementById('season'),'input');
+                                   if(doc.querySelectorAll('.link.on-path').length)
+                                     throw new Error('route survived a cutoff change');}],
+    // The URL hash is the only place a view can live in a single-file page.
+    ['state lands in the URL',()=>{doc.getElementById('season').value=7;
+                                   fire(doc.getElementById('season'),'input');
+                                   const h=window.location.hash;
+                                   if(!/GA=7\./.test(h)) throw new Error(`hash missing cutoff: ${h}`);}],
+    ['hidden types land in the URL',()=>{const cb=doc.querySelector('[data-type="Fling"]');
+                                   cb.checked=false; fire(cb,'change');
+                                   if(!/hide=.*Fling/.test(window.location.hash))
+                                     throw new Error(`hash missing filter: ${window.location.hash}`);
+                                   cb.checked=true; fire(cb,'change');}],
   ];
 
   for (const [name, fn] of trials) {

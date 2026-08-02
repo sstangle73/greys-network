@@ -24,6 +24,27 @@ what a viewer at that point would know.
 That makes it safe to look at mid-rewatch. Set the sliders to where you are and
 nothing later is on screen.
 
+### Trace a connection
+
+Pick any two people and the chart finds the shortest route between them —
+*Meredith → Derek → Addison → Mark → Amelia → Owen → Cristina* — and lights it
+up on the graph.
+
+It searches only the links **currently on screen**, which matters more than it
+sounds: routing through the full graph and then hiding the result would leak
+exactly what the cutoff exists to hide. "Three steps" tells you the steps are
+there even if you can't see them.
+
+Some people genuinely have no route. Miranda Bailey is unreachable from
+Meredith — every one of her partners has no other tie in the dataset.
+
+### Shareable views
+
+The whole view lives in the URL: per-show cutoffs, filters, spacing, selection
+and any traced route. Whatever is on your screen, the address bar will
+reproduce for someone else — including their own spoiler cutoff, so you can
+send a link without wrecking anyone's rewatch.
+
 ### Three shows, three clocks
 
 The spinoffs each have their own season numbering, and conflating them is the

@@ -335,8 +335,30 @@ TEMPLATE = r"""<!DOCTYPE html>
     .btn-fit { top: auto; bottom: 12px; right: 12px; }
     .rail.collapsed ~ .btn-fit { bottom: 64px; }
   }
+  .trace-form { display: flex; gap: 6px; flex-wrap: wrap; }
+  .trace-form input { flex: 1 1 96px; min-width: 0; }
+  .trace-form button {
+    flex: 0 0 auto; padding: 0 12px;
+    background: var(--rule); color: var(--bone); border: 0; border-radius: 3px;
+    font-family: 'Archivo', sans-serif; font-size: 11px; letter-spacing: .06em;
+    text-transform: uppercase; cursor: pointer;
+  }
+  .trace-form button:hover { background: var(--dating); color: var(--ground); }
+  .trace-out {
+    margin-top: 8px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px; line-height: 1.7; color: var(--muted);
+  }
+  .trace-out .hop { color: var(--bone); }
+  .trace-out .via { color: var(--muted); }
+  .trace-out .miss { color: var(--fling); }
+  /* The traced route outranks search dimming, so the path stays legible. */
+  .link.on-path { stroke-opacity: 1 !important; stroke-width: 3.4px !important; }
+  .node.on-path .card, .node.on-path circle { stroke: var(--bone); stroke-width: 2px; }
+  .marker.on-path { opacity: 1 !important; }
   @media (prefers-reduced-motion: reduce) {
     .detail { transition: none; }
+    /* The camera flight on fit/cutoff changes is the only other motion here. */
+    .link, .node { transition: none !important; }
   }
 </style>
 </head>
@@ -368,6 +390,15 @@ TEMPLATE = r"""<!DOCTYPE html>
     <input id="search" type="search" placeholder="e.g. Meredith" autocomplete="off"
            list="cast" spellcheck="false" />
     <datalist id="cast"></datalist>
+    <h2>Trace a connection</h2>
+    <div class="trace-form">
+      <input id="from" type="search" placeholder="From" autocomplete="off"
+             list="cast" spellcheck="false" />
+      <input id="to" type="search" placeholder="To" autocomplete="off"
+             list="cast" spellcheck="false" />
+      <button id="trace-go" type="button">Trace</button>
+    </div>
+    <div class="trace-out" id="trace-out"></div>
     <h2>Connection type</h2>
     <div class="key" id="key"></div>
     <label class="past-toggle">
@@ -484,6 +515,11 @@ const SHOW_BY_KEY = Object.fromEntries(DATA.shows.map(sh => [sh.key, sh]));
 let selected = null;
 let searchCore = null;   // people whose name matched
 let searchSet = null;    // those people plus everyone they connect to
+// Same reason as the two above: applyCutoff() clears any traced route and
+// writes the URL hash, and it runs during boot -- a `let` declared down with
+// that code is a temporal dead zone, not an undefined.
+let pathIds = new Set();
+let hashLoading = false;
 // Hoisted: clearSelection() calls applySearch(), and applyCutoff() can call
 // clearSelection() during boot -- a `const` further down would be a dead zone.
 const searchInput = document.getElementById('search');
@@ -904,6 +940,10 @@ function applyCutoff(refit = true) {
 
   refreshCastList();
   updateLabels();
+  // A traced route can be invalidated by any of the above -- winding the cutoff
+  // back can remove a link the path ran through.
+  if (typeof clearPath === 'function' && pathIds.size) clearPath();
+  if (typeof writeHash === 'function') writeHash();
   if (refit) fitToView(400, initialFloor());
 }
 
@@ -958,7 +998,11 @@ document.getElementById('fit').onclick = () => fitToView();
 /* ---- filtering ---------------------------------------------------------- */
 d3.select('#key').selectAll('input').on('change', function () {
   this.checked ? active.add(this.dataset.type) : active.delete(this.dataset.type);
-  link.style('display', l => (aired(l) && active.has(l.type)) ? null : 'none');
+  // Was doing its own partial update against the RAW l.type, which disagreed
+  // with displayType() -- a Married tie before its wedding reads as Dating, so
+  // unticking Dating left it on screen. It also skipped the node, marker and
+  // tally updates entirely. applyCutoff() is the one place that knows all of it.
+  applyCutoff(false);
 });
 
 document.getElementById('past').addEventListener('change', function () {
@@ -1127,6 +1171,213 @@ function refreshCastList() {
     .join('option').attr('value', d => d);
 }
 
+/* ---- trace a connection -------------------------------------------------- */
+// Breadth-first over the links that are ACTUALLY ON SCREEN, so a route can never
+// run through a relationship the viewer hasn't reached yet. Searching the full
+// graph and then hiding the result would leak exactly what the cutoff exists to
+// hide -- "Meredith to Maya in 3 steps" tells you the steps exist.
+// (pathIds is declared up with the other boot-time state.)
+
+function drawnLinks() {
+  return DATA.links.filter(l =>
+    aired(l) && active.has(displayType(l))
+    && (showPast || l.type === 'Parent' || !over(l))
+    && visible.has(l.source.id) && visible.has(l.target.id));
+}
+
+function shortestPath(fromId, toId) {
+  if (fromId === toId) return [fromId];
+  const adj = new Map();
+  for (const l of drawnLinks()) {
+    if (!adj.has(l.source.id)) adj.set(l.source.id, []);
+    if (!adj.has(l.target.id)) adj.set(l.target.id, []);
+    adj.get(l.source.id).push([l.target.id, l]);
+    adj.get(l.target.id).push([l.source.id, l]);
+  }
+  const prev = new Map([[fromId, null]]);
+  const queue = [fromId];
+  while (queue.length) {
+    const at = queue.shift();
+    if (at === toId) break;
+    for (const [next, l] of adj.get(at) || []) {
+      if (prev.has(next)) continue;
+      prev.set(next, [at, l]);
+      queue.push(next);
+    }
+  }
+  if (!prev.has(toId)) return null;
+  const chain = [];
+  for (let at = toId; at !== fromId; ) {
+    const [before, l] = prev.get(at);
+    chain.unshift({ from: before, to: at, link: l });
+    at = before;
+  }
+  return chain;
+}
+
+function clearPath() {
+  pathIds = new Set();
+  link.classed('on-path', false);
+  node.classed('on-path', false);
+  marker.classed('on-path', false);
+}
+
+// Resolve loosely so "meredith" finds "Meredith Grey" -- exact first, then
+// unique prefix, then unique substring.
+function resolveName(raw) {
+  const q = raw.trim().toLowerCase();
+  if (!q) return null;
+  const pool = DATA.nodes.filter(n => visible.has(n.id));
+  const exact = pool.find(n => n.id.toLowerCase() === q);
+  if (exact) return exact.id;
+  for (const test of [n => n.id.toLowerCase().startsWith(q),
+                      n => n.id.toLowerCase().includes(q)]) {
+    const hits = pool.filter(test);
+    if (hits.length === 1) return hits[0].id;
+    if (hits.length > 1) return { ambiguous: hits.slice(0, 4).map(n => n.id) };
+  }
+  return null;
+}
+
+const traceOut = document.getElementById('trace-out');
+
+function runTrace() {
+  clearPath();
+  const a = resolveName(document.getElementById('from').value);
+  const b = resolveName(document.getElementById('to').value);
+
+  for (const [label, hit] of [['From', a], ['To', b]]) {
+    if (!hit) {
+      traceOut.innerHTML = `<span class="miss">${label}: no one on screen by that name.</span>`;
+      return;
+    }
+    if (hit.ambiguous) {
+      traceOut.innerHTML = `<span class="miss">${label} is ambiguous:</span> ${hit.ambiguous.join(', ')}`;
+      return;
+    }
+  }
+
+  const chain = shortestPath(a, b);
+  if (!chain) {
+    traceOut.innerHTML = `<span class="miss">No route between them at this point in the show.</span>`;
+    return;
+  }
+  if (!chain.length || a === b) {
+    traceOut.innerHTML = `<span class="hop">${a}</span>`;
+    return;
+  }
+
+  const onPath = new Set(chain.map(step => step.link));
+  pathIds = new Set([a, ...chain.map(step => step.to)]);
+  link.classed('on-path', l => onPath.has(l));
+  marker.classed('on-path', l => onPath.has(l));
+  node.classed('on-path', n => pathIds.has(n.id));
+
+  const degrees = chain.length;
+  traceOut.innerHTML =
+    `<div>${degrees} step${degrees === 1 ? '' : 's'}</div>` +
+    `<div><span class="hop">${a}</span>` +
+    chain.map(step =>
+      ` <span class="via">&rarr; ${displayType(step.link).toLowerCase()} &rarr;</span> ` +
+      `<span class="hop">${step.to}</span>`).join('') +
+    `</div>`;
+  updateLabels();
+  writeHash();
+}
+
+document.getElementById('trace-go').addEventListener('click', runTrace);
+for (const id of ['from', 'to']) {
+  document.getElementById(id).addEventListener('keydown', e => {
+    if (e.key === 'Enter') runTrace();
+  });
+}
+
+/* ---- shareable state ----------------------------------------------------- */
+// The page is a single file with no server, so the URL hash is the only place
+// a view can live. Without this, "look at S7" is unshareable.
+// (hashLoading is declared up with the other boot-time state.)
+
+function writeHash() {
+  if (hashLoading) return;
+  const parts = [];
+  DATA.shows.forEach(sh => {
+    if (!enabled.has(sh.key)) { parts.push(`${sh.key}=off`); return; }
+    parts.push(`${sh.key}=${cuts[sh.key].s}.${cuts[sh.key].e}`);
+  });
+  const off = Object.keys(TYPES).filter(t => !active.has(t));
+  if (off.length) parts.push('hide=' + off.join('+'));
+  if (!showPast) parts.push('past=0');
+  if (spacing !== 1) parts.push('sp=' + spacing.toFixed(1));
+  if (selected) parts.push('sel=' + encodeURIComponent(selected));
+  const f = document.getElementById('from').value.trim();
+  const t = document.getElementById('to').value.trim();
+  if (f && t) parts.push(`trace=${encodeURIComponent(f)}~${encodeURIComponent(t)}`);
+  // Qualified off `window` rather than relying on bare globals: the page script
+  // is executed with window passed in explicitly, so bare `history` resolves to
+  // a global that does not exist outside a browser.
+  if (!window.history || !window.history.replaceState) return;
+  // Opening the file straight off disk is a supported way to use this, and a
+  // file:// document cannot always have its URL rewritten. A shareable link is
+  // a nicety; it must never take the chart down with it.
+  try {
+    window.history.replaceState(
+      null, '', parts.length ? '#' + parts.join('&') : window.location.pathname);
+  } catch (e) { /* no addressable URL - the chart still works */ }
+}
+
+function readHash() {
+  const raw = (window.location && window.location.hash || '').replace(/^#/, '');
+  if (!raw) return false;
+  hashLoading = true;
+  let trace = null;
+  for (const chunk of raw.split('&')) {
+    const [key, value] = chunk.split('=');
+    if (!value) continue;
+    if (cuts[key]) {
+      if (value === 'off') {
+        enabled.delete(key);
+        const box = document.getElementById(key === 'GA' ? 'on' : 'on-' + key);
+        if (box) { box.checked = false; box.dispatchEvent(new Event('change')); }
+      } else {
+        const [s, e] = value.split('.').map(Number);
+        if (s) {
+          cuts[key] = { s, e: e || 1 };
+          const sfx = key === 'GA' ? '' : '-' + key;
+          const ss = document.getElementById('season' + sfx);
+          const ee = document.getElementById('episode' + sfx);
+          if (ss) ss.value = s;
+          if (ee) ee.value = e || 1;
+        }
+      }
+    } else if (key === 'hide') {
+      value.split('+').forEach(t => {
+        active.delete(t);
+        const box = document.querySelector(`[data-type="${t}"]`);
+        if (box) box.checked = false;
+      });
+    } else if (key === 'past' && value === '0') {
+      showPast = false;
+      const box = document.getElementById('past');
+      if (box) box.checked = false;
+    } else if (key === 'sp') {
+      spacing = Math.max(0.6, Math.min(2.2, parseFloat(value) || 1));
+      const sp = document.getElementById('spacing');
+      if (sp) sp.value = Math.round(spacing * 10);
+      d3.select('#spacing-read').text(spacing.toFixed(1) + '×');
+    } else if (key === 'sel') {
+      selected = decodeURIComponent(value);
+    } else if (key === 'trace') {
+      trace = value.split('~').map(decodeURIComponent);
+    }
+  }
+  hashLoading = false;
+  if (trace && trace.length === 2) {
+    document.getElementById('from').value = trace[0];
+    document.getElementById('to').value = trace[1];
+  }
+  return { trace: !!trace };
+}
+
 /* ---- rail toggle -------------------------------------------------------- */
 const rail = document.getElementById('rail');
 const railToggle = document.getElementById('rail-toggle');
@@ -1143,6 +1394,21 @@ window.addEventListener('resize', () => {
   clearTimeout(resizeTimer);
   resizeTimer = setTimeout(() => fitToView(), 150);
 });
+
+/* ---- boot from a shared link -------------------------------------------- */
+// Last, because readHash() drives the per-show sliders and the legend, and none
+// of those elements exist until the blocks above have built them.
+(function bootFromHash() {
+  const restored = readHash();
+  if (!restored) return;
+  applyCutoff(false);
+  fitToView(0, initialFloor());
+  if (selected) {
+    const who = DATA.nodes.find(n => n.id === selected);
+    if (who && visible.has(who.id)) select(who); else selected = null;
+  }
+  if (restored.trace) runTrace();
+})();
 </script>
 </body>
 </html>

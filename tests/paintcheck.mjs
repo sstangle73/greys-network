@@ -3,7 +3,7 @@ import { JSDOM } from 'jsdom';
 import * as d3 from 'd3';
 const html=fs.readFileSync('greys_network.html','utf8');
 const script=html.match(/<script>\n(const DATA.*?)\n<\/script>/s)[1];
-const dom=new JSDOM(html.replace(/<script[\s\S]*?<\/script>/g,''),{pretendToBeVisual:true});
+const dom=new JSDOM(html.replace(/<script[\s\S]*?<\/script>/g,''),{ pretendToBeVisual: true, url: 'https://localhost/greys/' });
 const {window}=dom;
 Object.defineProperty(window,'innerWidth',{value:412,configurable:true});
 Object.defineProperty(window,'innerHeight',{value:915,configurable:true});
