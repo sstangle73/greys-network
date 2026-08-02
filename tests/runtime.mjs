@@ -12,9 +12,12 @@ const { window } = dom;
 global.window = window;
 global.document = window.document;
 global.d3 = d3;
-// d3-zoom reads navigator.maxTouchPoints. Node 21+ provides a built-in
-// navigator, Node 20 does not -- so this passed locally and failed in CI.
-global.navigator = window.navigator;
+// d3-zoom reads navigator.maxTouchPoints. Node 20 has no navigator global,
+// Node 21+ has a getter-only one that plain assignment throws on.
+if (!globalThis.navigator) {
+  Object.defineProperty(globalThis, 'navigator',
+    { value: window.navigator, configurable: true });
+}
 global.requestAnimationFrame = window.requestAnimationFrame.bind(window);
 global.setTimeout = setTimeout;
 global.clearTimeout = clearTimeout;

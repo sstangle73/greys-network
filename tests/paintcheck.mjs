@@ -9,10 +9,14 @@ Object.defineProperty(window,'innerWidth',{value:412,configurable:true});
 Object.defineProperty(window,'innerHeight',{value:915,configurable:true});
 global.window=window; global.document=window.document; global.d3=d3;
 global.SVGElement=window.SVGElement;
-// d3-zoom reads navigator.maxTouchPoints. Node 21+ has a built-in navigator so
-// this passes locally without it; Node 20 does not, and CI failed where the
-// dev machine was green. Take it from jsdom rather than from the runtime.
-global.navigator=window.navigator;
+// d3-zoom reads navigator.maxTouchPoints. Node 20 has no navigator global at
+// all, while Node 21+ defines one as a getter-only accessor that a plain
+// assignment throws on -- so this has to be conditional AND use defineProperty
+// to work on both.
+if (!globalThis.navigator) {
+  Object.defineProperty(globalThis, 'navigator',
+    { value: window.navigator, configurable: true });
+}
 global.requestAnimationFrame=window.requestAnimationFrame.bind(window);
 new Function('window','document','d3',script)(window,window.document,d3);
 const doc=window.document;

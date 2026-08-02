@@ -15,8 +15,12 @@ const script = html.match(/<script>\n(const DATA.*?)\n<\/script>/s)[1];
 const dom = new JSDOM(html.replace(/<script[\s\S]*?<\/script>/g, ''), { pretendToBeVisual: true });
 const { window } = dom;
 global.window = window; global.document = window.document; global.d3 = d3;
-// d3-zoom reads navigator.maxTouchPoints; Node 20 has no built-in navigator.
-global.navigator = window.navigator;
+// d3-zoom reads navigator.maxTouchPoints. Node 20 has no navigator global,
+// Node 21+ has a getter-only one that plain assignment throws on.
+if (!globalThis.navigator) {
+  Object.defineProperty(globalThis, 'navigator',
+    { value: window.navigator, configurable: true });
+}
 global.requestAnimationFrame = window.requestAnimationFrame.bind(window);
 global.setTimeout = setTimeout; global.clearTimeout = clearTimeout;
 new Function('window', 'document', 'd3', script)(window, window.document, d3);
