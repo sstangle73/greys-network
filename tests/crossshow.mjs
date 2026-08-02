@@ -61,6 +61,26 @@ const pp = doc.getElementById('season-PP'); pp.value = 1; fire(pp, 'input');
 check('PP at S1 hides a PP season 5 tie',
       linkVisible('Addison Montgomery', 'Jake Reilly'), false);
 
+// An unknown episode must be held to the END of its season, not asserted at
+// episode 1. Episode 1 is the earliest point available, so defaulting there
+// was the one direction that spoils.
+const gaSeason = doc.getElementById('season');
+const gaEpisode = doc.getElementById('episode');
+const unknown = d3.selectAll('.link').data()
+  .find(l => l.ek === 0 && l.show === 'GA' && l.s < 22);
+if (unknown) {
+  const showsAt = (s, e) => {
+    gaSeason.value = s; gaEpisode.value = e; fire(gaSeason, 'input');
+    return linkVisible(unknown.source.id, unknown.target.id);
+  };
+  check(`unknown episode hidden early in its season (${unknown.source.id} & ${unknown.target.id})`,
+        showsAt(unknown.s, 2), false);
+  check('unknown episode visible once the season is past',
+        showsAt(unknown.s + 1, 1), true);
+} else {
+  console.log('  --   no unknown-episode tie to check');
+}
+
 // Switching a show off removes its ties whatever the other clocks say.
 const s19 = doc.getElementById('on-S19'); s19.checked = false; fire(s19, 'change');
 check('Station 19 switched off hides its tie',

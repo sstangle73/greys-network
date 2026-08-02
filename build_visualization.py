@@ -82,6 +82,7 @@ def load_graph(indir: str) -> dict:
             "type": row.Relationship_Type,
             "show": row.Show,
             "reveals": unpack(row.Reveals),
+            "ek": int(row.Episode_Known),
             "s": int(row.First_Season),
             "e": int(row.First_Episode),
             "ls": as_int(row.Last_Season),
@@ -768,7 +769,16 @@ function seen(show, s, e) {
 // A tie is on screen once its home show has reached it, OR once some other
 // show you are watching has revealed it. That is what keeps a Grey's-only
 // viewer seeing exactly what Grey's told them.
-const atHome = l => seen(l.show, l.s, l.e);
+// ek=0 means "the season is right, the episode is unknown". Those are held back
+// until the whole season has been watched, because episode 1 is the EARLIEST
+// point in a season and asserting an unknown there is the one direction that
+// spoils. No episode number is invented to achieve this -- the data still says
+// "unknown", and only the comparison moves to the end of the season.
+function atHome(l) {
+  if (l.ek) return seen(l.show, l.s, l.e);
+  const meta = SHOW_BY_KEY[l.show];
+  return seen(l.show, l.s, meta ? meta.episodes : 27);
+}
 const revealed = l => l.reveals.filter(r => seen(r.show, r.s, r.e));
 const aired = l => atHome(l) || revealed(l).length > 0;
 // A marriage reads as intact until the split actually airs -- at S22 E02 Owen

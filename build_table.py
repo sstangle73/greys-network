@@ -39,6 +39,9 @@ def when(row, show):
             return ""
         return f"S{s}" + (f"&thinsp;E{int(float(e)):02d}" if e and int(float(e)) > 1 else "")
     start = tag(row["First_Season"], row["First_Episode"])
+    # Say so rather than printing E01 and letting it pass for precision.
+    if row.get("Episode_Known") == "0":
+        start = f"S{row['First_Season']}<span class=\"none\">&thinsp;E??</span>"
     end = tag(row["Last_Season"], row["Last_Episode"])
     if not end:
         return f"{start} &ndash; present"

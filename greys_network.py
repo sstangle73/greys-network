@@ -192,7 +192,7 @@ WEDDINGS = {
     frozenset({"Miranda Bailey", "Ben Warren"}): (9, 1),
     frozenset({"Richard Webber", "Adele Webber"}): (1, 1),
     frozenset({"Richard Webber", "Catherine Fox"}): (11, 1),
-    frozenset({"Ellis Grey", "Thatcher Grey"}): (2, 1),
+    frozenset({"Ellis Grey", "Thatcher Grey"}): (2, 18),
     frozenset({"Thatcher Grey", "Susan Grey"}): (2, 1),
     # Private Practice seasons below this line.
     frozenset({"Violet Turner", "Pete Wilder"}): (4, 1),
@@ -212,7 +212,7 @@ WEDDINGS = {
 # stay whole hearts, and the dagger on the partner's name tells that story.
 DIVORCES = {
     frozenset({"Derek Shepherd", "Addison Montgomery"}): (3, 1),
-    frozenset({"Ellis Grey", "Thatcher Grey"}): (2, 1),
+    frozenset({"Ellis Grey", "Thatcher Grey"}): (2, 18),
     frozenset({"Callie Torres", "George O'Malley"}): (4, 1),
     frozenset({"Callie Torres", "Arizona Robbins"}): (11, 1),
     frozenset({"Izzie Stevens", "Alex Karev"}): (6, 1),
@@ -253,19 +253,19 @@ def _romantic_edges() -> List[Tuple]:
         # --- Derek / Addison / Mark ------------------------------------------
         ("Derek Shepherd", "Addison Montgomery", "Married", (1, 9), (3, 1)),
         ("Derek Shepherd", "Rose", "Dating", (4, 1), (5, 1)),
-        ("Addison Montgomery", "Mark Sloan", "Fling", (2, 1), (3, 1)),
+        ("Addison Montgomery", "Mark Sloan", "Fling", (2, 18), (3, 1)),
         ("Addison Montgomery", "Alex Karev", "Fling", (3, 1), (3, 1)),
-        ("Mark Sloan", "Lexie Grey", "Dating", (5, 1), (8, 1)),
-        ("Mark Sloan", "Callie Torres", "Fling", (3, 1), (7, 1)),
-        ("Mark Sloan", "Reed Adamson", "Fling", (6, 1), (6, 1)),
+        ("Mark Sloan", "Lexie Grey", "Dating", (5, 10), (8, 1)),
+        ("Mark Sloan", "Callie Torres", "Fling", (3, 5), (7, 1)),
+        ("Mark Sloan", "Reed Adamson", "Fling", (6, 22), (6, 1)),
         ("Mark Sloan", "Teddy Altman", "Fling", (6, 22), (6, 1)),
         ("Nicole Herman", "Graham Maddox", "Fling", (11, 1), (11, 1)),
         ("Nicole Herman", "Tom Koracick", "Fling", (14, 23), (14, 1)),
-        ("Mark Sloan", "Julia Canner", "Dating", (8, 1), (9, 1)),
+        ("Mark Sloan", "Julia Canner", "Dating", (8, 7), (9, 1)),
         ("Mark Sloan", "Amelia Shepherd", "Fling", (7, 3), (7, 1)),
 
         # --- Callie / Arizona -------------------------------------------------
-        ("Callie Torres", "George O'Malley", "Married", (2, 1), (4, 1)),
+        ("Callie Torres", "George O'Malley", "Married", (2, 23), (4, 1)),
         ("Callie Torres", "Erica Hahn", "Dating", (4, 17), (5, 1)),
         ("Callie Torres", "Arizona Robbins", "Married", (5, 14), (12, 1)),
         ("Callie Torres", "Penny Blake", "Dating", (12, 17), (12, 1)),
@@ -279,8 +279,8 @@ def _romantic_edges() -> List[Tuple]:
         ("George O'Malley", "Olivia Harper", "Dating", (2, 1), (2, 1)),
         ("George O'Malley", "Izzie Stevens", "Dating", (3, 25), (4, 1)),
         ("Izzie Stevens", "Denny Duquette", "Dating", (2, 27), (2, 1)),
-        ("Izzie Stevens", "Alex Karev", "Married", (2, 1), (6, 1)),
-        ("Alex Karev", "Olivia Harper", "Fling", (2, 1), (2, 1)),
+        ("Izzie Stevens", "Alex Karev", "Married", (2, 5), (6, 1)),
+        ("Alex Karev", "Olivia Harper", "Fling", (2, 10), (2, 1)),
         ("Alex Karev", "Rebecca Pope", "Dating", (4, 1), (4, 1)),
         ("Alex Karev", "Lexie Grey", "Dating", (5, 1), (6, 1)),
         ("Alex Karev", "Reed Adamson", "Fling", (6, 1), (6, 1)),
@@ -344,9 +344,9 @@ def _romantic_edges() -> List[Tuple]:
         ("Miranda Bailey", "Eli Lloyd", "Dating", (7, 1), (8, 1)),
         ("Miranda Bailey", "Ben Warren", "Married", (6, 14), None),
         ("Richard Webber", "Adele Webber", "Married", (1, 1), (9, 1)),
-        ("Richard Webber", "Ellis Grey", "Fling", (2, 1), (3, 1)),
+        ("Richard Webber", "Ellis Grey", "Fling", (2, 15), (3, 1)),
         ("Richard Webber", "Catherine Fox", "Married", (8, 23), None),
-        ("Ellis Grey", "Thatcher Grey", "Married", (2, 1), (2, 1)),
+        ("Ellis Grey", "Thatcher Grey", "Married", (2, 18), (2, 1)),
         ("Thatcher Grey", "Susan Grey", "Married", (2, 22), (3, 1)),
         ("Thatcher Grey", "Danielle", "Dating", (7, 14), (7, 1)),
 
@@ -554,6 +554,29 @@ def _s19_parent_edges() -> List[Tuple]:
     return edges
 
 
+def _episode_is_known() -> List[dict]:
+    """Pairs whose episode 1 is a REAL episode 1 rather than a fallback.
+
+    Short by design. Anything not listed here and sitting on episode 1 is
+    treated as "season right, episode unknown".
+    """
+    return [
+        # The pilot ends with Meredith and Derek's one-night stand.
+        {"Source": "Meredith Grey", "Target": "Derek Shepherd"},
+        # Both cited to Station 19 1x01 "Stuck" by the audit.
+        {"Source": "Andy Herrera", "Target": "Jack Gibson"},
+        {"Source": "Dean Miller", "Target": "Tiffany"},
+        # Carina meets Arizona at a bar and goes home with her, 14x01.
+        {"Source": "Arizona Robbins", "Target": "Carina DeLuca"},
+        # Link and Jules hooked up the night before her first day, 19x01.
+        {"Source": "Atticus Lincoln", "Target": "Jules Millin"},
+        # Locker-room kiss in the season opener, 21x01.
+        {"Source": "Jules Millin", "Target": "Mika Yasuda"},
+        # Making out in the shooting aftermath, 7x01.
+        {"Source": "Teddy Altman", "Target": "Andrew Perkins"},
+    ]
+
+
 def _show_of(source: str, target: str) -> str:
     return HOME_SHOW.get(frozenset({source, target}), DEFAULT_SHOW)
 
@@ -603,6 +626,23 @@ def build_edges() -> pd.DataFrame:
                  "Reveals"],
     )
     df = df.drop_duplicates().reset_index(drop=True)
+
+    # Episode 1 means two different things -- "the pilot" and "we have no idea"
+    # -- and the data could not tell them apart. That mattered, because episode
+    # 1 is the EARLIEST value in a season, so an unknown was being asserted at
+    # the most spoiler-risky point available, in direct contradiction of the
+    # date-late rule this project runs on.
+    #
+    # Episode_Known=0 says "season is right, episode is unknown". The visualizer
+    # holds those back until the whole season has been watched, which is the
+    # late end. No episode number is invented to achieve that.
+    known = {frozenset({r["Source"], r["Target"]}) for r in _episode_is_known()}
+    df["Episode_Known"] = [
+        1 if (int(row.First_Episode) > 1
+              or frozenset({row.Source, row.Target}) in known
+              or row.Relationship_Type == "Parent") else 0
+        for row in df.itertuples()
+    ]
 
     def outcome(row, field):
         split = DIVORCES.get(frozenset({row.Source, row.Target}))
