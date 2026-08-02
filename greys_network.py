@@ -164,6 +164,8 @@ GOT_TOGETHER = {
     # The drunken night is S3; they only tried being a couple in S4.
     frozenset({"George O'Malley", "Izzie Stevens"}): (4, 1),
     frozenset({"April Kepner", "Jackson Avery"}): (9, 1),
+    # Hooked up at 18x09, only official at 19x20.
+    frozenset({"Jo Wilson", "Atticus Lincoln"}): (19, 20),
 }
 
 # When each couple actually got married. Relationship_Type records where a tie
@@ -243,7 +245,7 @@ def _romantic_edges() -> List[Tuple]:
         ("Meredith Grey", "Derek Shepherd", "Married", (1, 1), (11, 1)),
         ("Meredith Grey", "Finn Dandridge", "Dating", (2, 1), (3, 1)),
         ("Meredith Grey", "George O'Malley", "Fling", (2, 12), (2, 1)),
-        ("Meredith Grey", "Steve Murphy", "Fling", (2, 1), (2, 1)),
+        ("Meredith Grey", "Steve Murphy", "Fling", (2, 10), (2, 1)),
         ("Meredith Grey", "William Thorpe", "Dating", (12, 13), (12, 1)),
         ("Meredith Grey", "Nathan Riggs", "Dating", (12, 23), (14, 1)),
         ("Meredith Grey", "Andrew DeLuca", "Dating", (15, 13), (16, 1)),
@@ -276,15 +278,15 @@ def _romantic_edges() -> List[Tuple]:
         ("Carina DeLuca", "Maya Bishop", "Married", (3, 5), None),
 
         # --- George / Izzie / Alex --------------------------------------------
-        ("George O'Malley", "Olivia Harper", "Dating", (2, 1), (2, 1)),
+        ("George O'Malley", "Olivia Harper", "Dating", (1, 9), (2, 1)),
         ("George O'Malley", "Izzie Stevens", "Dating", (3, 25), (4, 1)),
         ("Izzie Stevens", "Denny Duquette", "Dating", (2, 27), (2, 1)),
         ("Izzie Stevens", "Alex Karev", "Married", (2, 5), (6, 1)),
         ("Alex Karev", "Olivia Harper", "Fling", (2, 10), (2, 1)),
-        ("Alex Karev", "Rebecca Pope", "Dating", (4, 1), (4, 1)),
+        ("Alex Karev", "Rebecca Pope", "Dating", (4, 10), (4, 1)),
         ("Alex Karev", "Lexie Grey", "Dating", (5, 1), (6, 1)),
         ("Alex Karev", "Reed Adamson", "Fling", (6, 1), (6, 1)),
-        ("Alex Karev", "Lucy Fields", "Dating", (7, 1), (7, 1)),
+        ("Alex Karev", "Lucy Fields", "Dating", (7, 17), (7, 1)),
         ("Alex Karev", "Callie Torres", "Fling", (6, 13), (6, 1)),
         ("Alex Karev", "Laurel Pinson", "Fling", (7, 12), (7, 1)),
         ("Alex Karev", "Jo Wilson", "Married", (9, 24), (16, 1)),
@@ -292,10 +294,10 @@ def _romantic_edges() -> List[Tuple]:
         # --- Jo Wilson / Link -------------------------------------------------
         ("Jo Wilson", "Jason Myers", "Dating", (9, 18), (9, 1)),
         ("Jo Wilson", "Paul Stadler", "Married", (13, 12), (14, 1)),
-        ("Jo Wilson", "Levi Schmitt", "Fling", (16, 1), (16, 1)),
+        ("Jo Wilson", "Levi Schmitt", "Fling", (14, 1), (14, 1)),
         ("Jo Wilson", "Todd Eames", "Dating", (18, 13), (18, 1)),
         ("Jo Wilson", "Chris Cleaver", "Dating", (14, 15), (14, 1)),
-        ("Jo Wilson", "Atticus Lincoln", "Married", (19, 20), None),
+        ("Jo Wilson", "Atticus Lincoln", "Married", (18, 9), None),
         ("Atticus Lincoln", "Amelia Shepherd", "Dating", (15, 17), (18, 1)),
 
         # --- Amelia / Owen / Teddy / Cristina ---------------------------------
@@ -322,7 +324,7 @@ def _romantic_edges() -> List[Tuple]:
         # --- April / Jackson / Maggie -----------------------------------------
         ("April Kepner", "Robert Stark", "Dating", (7, 1), (7, 1)),
         ("April Kepner", "Jackson Avery", "Married", (8, 22), None),
-        ("April Kepner", "Matthew Taylor", "Married", (9, 1), (17, 1)),
+        ("April Kepner", "Matthew Taylor", "Married", (9, 15), (17, 1)),
         ("April Kepner", "Tom Koracick", "Fling", (14, 15), (14, 1)),
         ("April Kepner", "Vikram Roy", "Fling", (14, 10), (14, 1)),
         ("Jackson Avery", "Lexie Grey", "Dating", (7, 20), (8, 1)),
@@ -355,7 +357,7 @@ def _romantic_edges() -> List[Tuple]:
 
         # --- Residents (S19-S22) ----------------------------------------------
         ("Levi Schmitt", "Nico Kim", "Dating", (15, 6), (18, 1)),
-        ("Levi Schmitt", "James Morgan", "Dating", (21, 1), None),
+        ("Levi Schmitt", "James Morgan", "Dating", (21, 4), None),
         ("Nico Kim", "Jason Shaheen", "Dating", (20, 3), None),
         ("Atticus Lincoln", "Jules Millin", "Fling", (19, 1), (19, 1)),
         ("Jules Millin", "Mika Yasuda", "Dating", (21, 1), (21, 1)),

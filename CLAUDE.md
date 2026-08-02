@@ -30,6 +30,9 @@ a spoiler for them.
 | `build_visualization.py` | Reads the CSVs, emits the standalone `greys_network.html`. |
 | `wiki_harvest.py` | Harvests the Grey's Anatomy Universe Wiki and diffs it against `edges.csv`. **Needs network — this is why the project moved to Claude Code.** |
 | `review.py` | Reviewer's companion: dumps the `==Romantic==` prose for a character so a tie can be checked by hand. Not part of the build. |
+| `episode_harvest.py` | Caches one wiki page per episode (681 across three shows) and scans summaries for when a pair actually got together. |
+| `backfill_episodes.py` | Candidate generator for episode dates. **Report-only — its docstring explains why its output cannot be trusted unverified.** |
+| `citations.csv` | The evidence behind each tie: which episode, and how far the evidence goes. |
 | `audit_apply.py` | Re-reads verified pairs out of `edges.csv` into `audit_tracker.csv`, so `Verified` can't drift from the source of truth. |
 | `audit_tracker.csv` | Romantic ties with a `Verified` column marking which are source-checked. |
 | `tests/paintcheck.mjs` | Asserts the chart actually renders in all three code paths. |
@@ -71,12 +74,31 @@ Last_Season/Episode     when it ended (blank = still together)
 Reveals                 what OTHER shows showed, e.g. "GA:16x14:Dating"
 ```
 
-**Episode precision is per-tie.** Where `citations.csv` carries a code for a
-tie's first season, `First_Episode` is that episode; otherwise it falls back to
-episode 1. Currently 103 of 165 romantic ties have a real episode. The fallback
-was invisible on a static chart and obvious the moment timeline playback landed,
-because everything without one pops in on the season boundary — worth
-remembering that a display feature can be the thing that audits your data.
+**Episode precision is per-tie, and `Episode_Known` says which.** 132 of 162
+romantic ties carry a real episode, read off the prose by hand. The other 30 are
+flagged `Episode_Known=0`, and the chart holds those until their whole season has
+been watched.
+
+That flag exists because `First_Episode: 1` used to mean two different things —
+"the pilot" and "we have no idea" — and episode 1 is the *earliest* point in a
+season, so every unknown was being asserted at the most spoiler-risky moment
+available. The fallback was invisible on a static chart and obvious the moment
+timeline playback landed. Worth remembering that a display feature can be the
+thing that audits your data.
+
+**Do not mine episode numbers.** Taking the earliest code in a section looks
+safe and is not: for Owen & Teddy in season 14 it picks 14x02, where the prose
+is Teddy *backing away* from a kiss, while the relationship starts at 14x17. A
+`==Romantic==` section narrates the friendship and the near-misses first, so the
+earliest code is routinely many episodes early — in the direction that spoils.
+`backfill_episodes.py` keeps the full autopsy.
+
+Citation density on the character pages starts around **Grey's season 9**.
+Before that the Romantic sections are largely unreferenced, and most of the
+codes `review.py` reports are image filenames rather than citations. That is
+what `episode_harvest.py` is for: on an episode page the number is in the
+infobox and the season is the category, so a fact found there arrives already
+dated.
 
 `Show` is the tie's home show and every stage date is in that show's seasons.
 `Reveals` is how a tie reaches a viewer who doesn't watch the home show: a tie
