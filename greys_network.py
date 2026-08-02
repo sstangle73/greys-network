@@ -235,7 +235,7 @@ DIVORCES = {
     frozenset({"Derek Shepherd", "Addison Montgomery"}): (3, 1),
     frozenset({"Ellis Grey", "Thatcher Grey"}): (2, 18),
     frozenset({"Callie Torres", "George O'Malley"}): (4, 1),
-    frozenset({"Callie Torres", "Arizona Robbins"}): (11, 1),
+    frozenset({"Callie Torres", "Arizona Robbins"}): (11, 5),
     frozenset({"Izzie Stevens", "Alex Karev"}): (6, 1),
     frozenset({"Alex Karev", "Jo Wilson"}): (16, 1),
     frozenset({"Owen Hunt", "Cristina Yang"}): (9, 1),
@@ -265,10 +265,10 @@ def _romantic_edges() -> List[Tuple]:
         ("Meredith Grey", "Finn Dandridge", "Dating", (2, 1), (3, 1)),
         ("Meredith Grey", "George O'Malley", "Fling", (2, 12), (2, 1)),
         ("Meredith Grey", "Steve Murphy", "Fling", (2, 10), (2, 1)),
-        ("Meredith Grey", "William Thorpe", "Dating", (12, 13), (12, 1)),
-        ("Meredith Grey", "Nathan Riggs", "Dating", (12, 23), (14, 1)),
-        ("Meredith Grey", "Andrew DeLuca", "Dating", (15, 13), (16, 1)),
-        ("Meredith Grey", "Cormac Hayes", "Dating", (18, 1), (18, 1)),
+        ("Meredith Grey", "William Thorpe", "Dating", (12, 13), (12, 16)),
+        ("Meredith Grey", "Nathan Riggs", "Dating", (12, 23), (14, 5)),
+        ("Meredith Grey", "Andrew DeLuca", "Dating", (15, 13), (16, 14)),
+        ("Meredith Grey", "Cormac Hayes", "Dating", (18, 1), (18, 9)),
         ("Meredith Grey", "Nick Marsh", "Dating", (18, 2), None),
 
         # --- Derek / Addison / Mark ------------------------------------------
@@ -281,19 +281,19 @@ def _romantic_edges() -> List[Tuple]:
         ("Mark Sloan", "Reed Adamson", "Fling", (6, 22), (6, 1)),
         ("Mark Sloan", "Teddy Altman", "Fling", (6, 22), (6, 1)),
         ("Nicole Herman", "Graham Maddox", "Fling", (11, 8), (11, 8)),
-        ("Nicole Herman", "Tom Koracick", "Fling", (14, 23), (14, 1)),
+        ("Nicole Herman", "Tom Koracick", "Fling", (14, 23), (14, 23)),
         ("Mark Sloan", "Julia Canner", "Dating", (8, 7), (9, 1)),
         ("Mark Sloan", "Amelia Shepherd", "Fling", (7, 3), (7, 1)),
 
         # --- Callie / Arizona -------------------------------------------------
         ("Callie Torres", "George O'Malley", "Married", (2, 23), (4, 1)),
         ("Callie Torres", "Erica Hahn", "Dating", (4, 17), (5, 1)),
-        ("Callie Torres", "Arizona Robbins", "Married", (5, 14), (12, 1)),
-        ("Callie Torres", "Penny Blake", "Dating", (12, 17), (12, 1)),
+        ("Callie Torres", "Arizona Robbins", "Married", (5, 14), (11, 5)),
+        ("Callie Torres", "Penny Blake", "Dating", (12, 17), (12, 23)),
         ("Arizona Robbins", "Lauren Boswell", "Fling", (9, 23), (9, 1)),
-        ("Arizona Robbins", "Leah Murphy", "Fling", (10, 4), (10, 1)),
-        ("Arizona Robbins", "Eliza Minnick", "Dating", (13, 14), (13, 1)),
-        ("Arizona Robbins", "Carina DeLuca", "Dating", (14, 1), (14, 1)),
+        ("Arizona Robbins", "Leah Murphy", "Fling", (10, 4), (10, 9)),
+        ("Arizona Robbins", "Eliza Minnick", "Dating", (13, 14), (13, 24)),
+        ("Arizona Robbins", "Carina DeLuca", "Dating", (14, 1), (14, 22)),
         ("Carina DeLuca", "Maya Bishop", "Married", (3, 5), None),
 
         # --- George / Izzie / Alex --------------------------------------------
@@ -307,55 +307,55 @@ def _romantic_edges() -> List[Tuple]:
         ("Alex Karev", "Lucy Fields", "Dating", (7, 17), (7, 1)),
         ("Alex Karev", "Callie Torres", "Fling", (6, 13), (6, 1)),
         ("Alex Karev", "Laurel Pinson", "Fling", (7, 12), (7, 1)),
-        ("Alex Karev", "Jo Wilson", "Married", (9, 24), (16, 1)),
+        ("Alex Karev", "Jo Wilson", "Married", (9, 24), (16, 16)),
 
         # --- Jo Wilson / Link -------------------------------------------------
-        ("Jo Wilson", "Jason Myers", "Dating", (9, 18), (9, 1)),
-        ("Jo Wilson", "Paul Stadler", "Married", (13, 12), (14, 1)),
+        ("Jo Wilson", "Jason Myers", "Dating", (9, 18), (9, 23)),
+        ("Jo Wilson", "Paul Stadler", "Married", (13, 12), (14, 10)),
         ("Jo Wilson", "Levi Schmitt", "Fling", (14, 1), (14, 1)),
-        ("Jo Wilson", "Todd Eames", "Dating", (18, 13), (18, 1)),
+        ("Jo Wilson", "Todd Eames", "Dating", (18, 13), (18, 19)),
         ("Jo Wilson", "Chris Cleaver", "Dating", (14, 15), (14, 1)),
         ("Jo Wilson", "Atticus Lincoln", "Married", (18, 9), None),
         ("Atticus Lincoln", "Amelia Shepherd", "Dating", (15, 17), (18, 1)),
 
         # --- Amelia / Owen / Teddy / Cristina ---------------------------------
         ("Amelia Shepherd", "Owen Hunt", "Married", (11, 17), (15, 1)),
-        ("Amelia Shepherd", "Tom Koracick", "Fling", (14, 6), (14, 1)),
+        ("Amelia Shepherd", "Tom Koracick", "Fling", (14, 6), (14, 6)),
         ("Amelia Shepherd", "Kai Bartley", "Dating", (18, 8), (19, 1)),
         ("Amelia Shepherd", "Toni Wright", "Dating", (22, 11), (22, 18)),
         ("Owen Hunt", "Beth Whitman", "Dating", (5, 1), (5, 1)),
         ("Owen Hunt", "Cristina Yang", "Married", (5, 6), (9, 1)),
-        ("Owen Hunt", "Emma Marling", "Dating", (10, 4), (10, 1)),
+        ("Owen Hunt", "Emma Marling", "Dating", (10, 4), (10, 14)),
         ("Owen Hunt", "Teddy Altman", "Married", (14, 17), None),
-        ("Owen Hunt", "Carina DeLuca", "Fling", (14, 6), (14, 1)),
+        ("Owen Hunt", "Carina DeLuca", "Fling", (14, 6), (14, 12)),
         ("Owen Hunt", "Nora", "Fling", (21, 13), (21, 13)),
         ("Teddy Altman", "Henry Burton", "Married", (7, 10), (8, 1)),
         ("Teddy Altman", "Andrew Perkins", "Dating", (7, 1), (7, 1)),
-        ("Teddy Altman", "Tom Koracick", "Dating", (15, 12), (17, 1)),
-        ("Teddy Altman", "Cass Beckman", "Dating", (21, 6), (21, 18)),
+        ("Teddy Altman", "Tom Koracick", "Dating", (15, 12), (17, 7)),
+        ("Teddy Altman", "Cass Beckman", "Dating", (21, 6), None),
         ("Cristina Yang", "Colin Marlow", "Dating", (2, 1), (2, 1)),
         ("Cristina Yang", "Preston Burke", "Dating", (2, 3), (3, 1)),
-        ("Cristina Yang", "Shane Ross", "Fling", (10, 1), (10, 1)),
+        ("Cristina Yang", "Shane Ross", "Fling", (10, 1), (10, 12)),
         ("Cristina Yang", "Darren Parker", "Fling", (9, 3), (9, 1)),
 
         # --- April / Jackson / Maggie -----------------------------------------
         ("April Kepner", "Jackson Avery", "Married", (8, 22), None),
-        ("April Kepner", "Matthew Taylor", "Married", (9, 15), (17, 1)),
+        ("April Kepner", "Matthew Taylor", "Married", (9, 15), (17, 14)),
         ("April Kepner", "Tom Koracick", "Fling", (14, 15), (14, 1)),
         ("April Kepner", "Vikram Roy", "Fling", (14, 10), (14, 1)),
         ("Jackson Avery", "Lexie Grey", "Dating", (7, 20), (8, 1)),
         ("Jackson Avery", "Mara Keaton", "Fling", (8, 17), (8, 1)),
-        ("Jackson Avery", "Stephanie Edwards", "Dating", (9, 10), (10, 1)),
-        ("Jackson Avery", "Priya", "Dating", (14, 1), (14, 1)),
-        ("Jackson Avery", "Jo Wilson", "Fling", (17, 4), (17, 1)),
+        ("Jackson Avery", "Stephanie Edwards", "Dating", (9, 10), (10, 12)),
+        ("Jackson Avery", "Priya", "Dating", (14, 1), (14, 14)),
+        ("Jackson Avery", "Jo Wilson", "Fling", (17, 4), (17, 15)),
         ("Jackson Avery", "Maggie Pierce", "Dating", (14, 14), (16, 1)),
-        ("Jackson Avery", "Victoria Hughes", "Dating", (16, 3), (16, 1)),
-        ("Maggie Pierce", "Ethan Boyd", "Dating", (11, 1), (12, 1)),
+        ("Jackson Avery", "Victoria Hughes", "Dating", (16, 3), (16, 17)),
+        ("Maggie Pierce", "Ethan Boyd", "Dating", (11, 1), (12, 3)),
         ("Maggie Pierce", "Dean", "Dating", (11, 10), (11, 1)),
-        ("Maggie Pierce", "Andrew DeLuca", "Dating", (12, 3), (12, 1)),
-        ("Maggie Pierce", "Clive Johnson", "Dating", (14, 9), (14, 1)),
-        ("Maggie Pierce", "Winston Ndugu", "Married", (16, 19), (19, 1)),
-        ("Andrew DeLuca", "Sam Bello", "Dating", (14, 7), (14, 1)),
+        ("Maggie Pierce", "Andrew DeLuca", "Dating", (12, 3), (12, 16)),
+        ("Maggie Pierce", "Clive Johnson", "Dating", (14, 9), (14, 14)),
+        ("Maggie Pierce", "Winston Ndugu", "Married", (16, 19), (19, 20)),
+        ("Andrew DeLuca", "Sam Bello", "Dating", (14, 7), (14, 19)),
 
         # --- Bailey / Webber / the older generation ---------------------------
         ("Miranda Bailey", "Tucker Jones", "Married", (1, 1), (6, 1)),
@@ -372,18 +372,18 @@ def _romantic_edges() -> List[Tuple]:
         ("Nathan Riggs", "Megan Hunt", "Dating", (14, 5), (18, 1)),
 
         # --- Residents (S19-S22) ----------------------------------------------
-        ("Levi Schmitt", "Nico Kim", "Dating", (15, 6), (18, 1)),
+        ("Levi Schmitt", "Nico Kim", "Dating", (15, 6), (18, 10)),
         ("Levi Schmitt", "James Morgan", "Dating", (21, 4), None),
         ("Nico Kim", "Jason Shaheen", "Dating", (20, 3), None),
         ("Atticus Lincoln", "Jules Millin", "Fling", (19, 1), (19, 1)),
-        ("Jules Millin", "Mika Yasuda", "Dating", (21, 1), (21, 1)),
+        ("Jules Millin", "Mika Yasuda", "Dating", (21, 1), (21, 8)),
         ("Benson Kwan", "Molly Tran", "Dating", (21, 2), (21, 1)),
         ("Lucas Adams", "Cara Ford", "Fling", (19, 10), (19, 1)),
         ("Lucas Adams", "Dani Spencer", "Fling", (22, 16), (22, 16)),
-        ("Simone Griffith", "Trey Delgado", "Dating", (19, 9), (19, 1)),
-        ("Simone Griffith", "Lucas Adams", "Dating", (19, 9), (22, 2)),
+        ("Simone Griffith", "Trey Delgado", "Dating", (19, 9), (19, 20)),
+        ("Simone Griffith", "Lucas Adams", "Dating", (19, 9), (22, 1)),
         ("Simone Griffith", "Wes Bryant", "Fling", (21, 17), None),
-        ("Taryn Helm", "Mika Yasuda", "Dating", (19, 9), (20, 1)),
+        ("Taryn Helm", "Mika Yasuda", "Dating", (19, 9), (20, 9)),
         ("Benson Kwan", "Jules Millin", "Fling", (19, 3), (19, 1)),
         ("Benson Kwan", "Kavita Mohanty", "Dating", (22, 7), (22, 16)),
         ("Winston Ndugu", "Monica Beltran", "Fling", (20, 10), (20, 10)),
@@ -469,7 +469,7 @@ def _pp_edges() -> List[Tuple]:
         ("Violet Turner", "Scott Becker", "Dating", (5, 11), (5, 17)),
         ("Violet Turner", "Allan", "Dating", (1, 5), (1, 5)),
         ("Pete Wilder", "Meg Porter", "Dating", (1, 1), (2, 1)),
-        ("Pete Wilder", "Lisa King", "Dating", (2, 1), (2, 22)),
+        ("Pete Wilder", "Lisa King", "Dating", (2, 1), (2, 21)),
 
         # --- Cooper / Charlotte ----------------------------------------------
         ("Cooper Freedman", "Charlotte King", "Married", (1, 8), None),
@@ -512,9 +512,9 @@ def _s19_edges() -> List[Tuple]:
     """
     return [
         # --- Andy / Sullivan -------------------------------------------------
-        ("Andy Herrera", "Ryan Tanner", "Fling", (1, 7), (2, 10)),
+        ("Andy Herrera", "Ryan Tanner", "Fling", (1, 7), (2, 12)),
         ("Andy Herrera", "Jack Gibson", "Dating", (1, 1), (1, 5)),
-        ("Andy Herrera", "Robert Sullivan", "Married", (2, 17), (5, 4)),
+        ("Andy Herrera", "Robert Sullivan", "Married", (2, 17), (5, 8)),
         ("Andy Herrera", "Sean Beckett", "Fling", (5, 2), (5, 2)),
         # The wedding is asserted in three places and cited in none -- Sullivan's
         # own "Romance with Natasha" heading is an empty stub. Dated to their
@@ -523,7 +523,7 @@ def _s19_edges() -> List[Tuple]:
 
         # --- Maya / Jack -----------------------------------------------------
         ("Maya Bishop", "Charlotte Dearborn", "Fling", (1, 10), (1, 10)),
-        ("Maya Bishop", "Jack Gibson", "Dating", (2, 10), (3, 15)),
+        ("Maya Bishop", "Jack Gibson", "Dating", (2, 10), (3, 1)),
         ("Jack Gibson", "Inara", "Dating", (4, 16), (4, 16)),
         ("Jack Gibson", "Eva Vasquez", "Fling", (6, 10), (6, 10)),
 
@@ -653,6 +653,12 @@ def build_edges() -> pd.DataFrame:
     sources = [(_romantic_edges(), None), (_pp_edges(), "PP"), (_s19_edges(), "S19")]
     for rows, forced in sources:
         for source, target, rtype, start, end in rows:
+            # A fling is one episode by definition, so its end IS its start.
+            # Episode numbers were backfilled onto starts without touching ends,
+            # which left flings recorded as beginning at 6x22 and finishing at
+            # 6x01 -- backwards, and only visible once ends were audited.
+            if rtype == "Fling" and end and end[0] == start[0] and end[1] < start[1]:
+                end = start
             show = forced or _show_of(source, target)
             records.append((source, target, rtype, show, start[0], start[1],
                             end[0] if end else "", end[1] if end else "",
@@ -794,6 +800,21 @@ def validate(edges: pd.DataFrame, nodes: pd.DataFrame) -> None:
     ends = edges[~ongoing]
     assert (ends["Last_Season"].astype(int) >= ends["First_Season"]).all(), \
         "A relationship ends before it starts"
+
+    # Season alone is not enough: this compared seasons only, so a tie starting
+    # at 14x23 and ending at 14x01 passed. Only applied where the end episode is
+    # actually KNOWN -- an unknown end is a placeholder the visualizer already
+    # holds to the season's close, not a claim that the tie ended in episode 1.
+    same = ends[(ends["Last_Season"].astype(int) == ends["First_Season"])
+                & (ends["End_Episode_Known"] == 1)]
+    backwards = [
+        f"{r.Source} & {r.Target} ({r.Show} S{r.First_Season}: "
+        f"E{r.First_Episode} -> E{r.Last_Episode})"
+        for r in same.itertuples()
+        if int(r.Last_Episode) < int(r.First_Episode)
+    ]
+    assert not backwards, ("A relationship ends before it starts, within a season:\n  "
+                           + "\n  ".join(backwards))
 
     allowed = {"Married", "Dating", "Fling", "Parent"}
     bad = set(edges["Relationship_Type"]) - allowed
