@@ -28,8 +28,13 @@ because everything without a real episode pops in on the season boundary.
 
 Where a date is uncertain the entry is deliberately dated LATE: a too-late
 tag hides something you've already seen, while a too-early tag spoils you.
-That rule also makes the fallback safe in the other direction: taking the
-first cited code in a season can only ever land on or after the true episode.
+
+Episode numbers were read off the prose by hand, NOT mined. Taking the earliest
+code in a section looks safe and is not: for Owen and Teddy in season 14 that
+picks 14x02, where the prose is Teddy backing away from a kiss, and the
+relationship starts at 14x17. A Romantic section narrates the friendship and
+the near-misses first, so the earliest code is routinely fifteen episodes early
+-- in the direction that spoils. See backfill_episodes.py for the full autopsy.
 
 Usage:
     python greys_network.py [--outdir .]
@@ -241,9 +246,9 @@ def _romantic_edges() -> List[Tuple]:
         ("Meredith Grey", "Steve Murphy", "Fling", (2, 1), (2, 1)),
         ("Meredith Grey", "William Thorpe", "Dating", (12, 13), (12, 1)),
         ("Meredith Grey", "Nathan Riggs", "Dating", (12, 23), (14, 1)),
-        ("Meredith Grey", "Andrew DeLuca", "Dating", (15, 1), (16, 1)),
+        ("Meredith Grey", "Andrew DeLuca", "Dating", (15, 13), (16, 1)),
         ("Meredith Grey", "Cormac Hayes", "Dating", (18, 1), (18, 1)),
-        ("Meredith Grey", "Nick Marsh", "Dating", (18, 1), None),
+        ("Meredith Grey", "Nick Marsh", "Dating", (18, 2), None),
 
         # --- Derek / Addison / Mark ------------------------------------------
         ("Derek Shepherd", "Addison Montgomery", "Married", (1, 9), (3, 1)),
@@ -255,7 +260,7 @@ def _romantic_edges() -> List[Tuple]:
         ("Mark Sloan", "Reed Adamson", "Fling", (6, 1), (6, 1)),
         ("Mark Sloan", "Teddy Altman", "Fling", (6, 22), (6, 1)),
         ("Nicole Herman", "Graham Maddox", "Fling", (11, 1), (11, 1)),
-        ("Nicole Herman", "Tom Koracick", "Fling", (14, 1), (14, 1)),
+        ("Nicole Herman", "Tom Koracick", "Fling", (14, 23), (14, 1)),
         ("Mark Sloan", "Julia Canner", "Dating", (8, 1), (9, 1)),
         ("Mark Sloan", "Amelia Shepherd", "Fling", (7, 3), (7, 1)),
 
@@ -266,7 +271,7 @@ def _romantic_edges() -> List[Tuple]:
         ("Callie Torres", "Penny Blake", "Dating", (12, 17), (12, 1)),
         ("Arizona Robbins", "Lauren Boswell", "Fling", (9, 23), (9, 1)),
         ("Arizona Robbins", "Leah Murphy", "Fling", (10, 4), (10, 1)),
-        ("Arizona Robbins", "Eliza Minnick", "Dating", (13, 1), (13, 1)),
+        ("Arizona Robbins", "Eliza Minnick", "Dating", (13, 14), (13, 1)),
         ("Arizona Robbins", "Carina DeLuca", "Dating", (14, 1), (14, 1)),
         ("Carina DeLuca", "Maya Bishop", "Married", (3, 5), None),
 
@@ -282,19 +287,19 @@ def _romantic_edges() -> List[Tuple]:
         ("Alex Karev", "Lucy Fields", "Dating", (7, 1), (7, 1)),
         ("Alex Karev", "Callie Torres", "Fling", (6, 13), (6, 1)),
         ("Alex Karev", "Laurel Pinson", "Fling", (7, 12), (7, 1)),
-        ("Alex Karev", "Jo Wilson", "Married", (9, 1), (16, 1)),
+        ("Alex Karev", "Jo Wilson", "Married", (9, 24), (16, 1)),
 
         # --- Jo Wilson / Link -------------------------------------------------
         ("Jo Wilson", "Jason Myers", "Dating", (9, 18), (9, 1)),
         ("Jo Wilson", "Paul Stadler", "Married", (13, 12), (14, 1)),
         ("Jo Wilson", "Levi Schmitt", "Fling", (16, 1), (16, 1)),
-        ("Jo Wilson", "Todd Eames", "Dating", (18, 1), (18, 1)),
+        ("Jo Wilson", "Todd Eames", "Dating", (18, 13), (18, 1)),
         ("Jo Wilson", "Chris Cleaver", "Dating", (14, 15), (14, 1)),
-        ("Jo Wilson", "Atticus Lincoln", "Married", (19, 1), None),
+        ("Jo Wilson", "Atticus Lincoln", "Married", (19, 20), None),
         ("Atticus Lincoln", "Amelia Shepherd", "Dating", (15, 17), (18, 1)),
 
         # --- Amelia / Owen / Teddy / Cristina ---------------------------------
-        ("Amelia Shepherd", "Owen Hunt", "Married", (11, 1), (15, 1)),
+        ("Amelia Shepherd", "Owen Hunt", "Married", (11, 17), (15, 1)),
         ("Amelia Shepherd", "Tom Koracick", "Fling", (14, 6), (14, 1)),
         ("Amelia Shepherd", "Kai Bartley", "Dating", (18, 8), (19, 1)),
         ("Amelia Shepherd", "Toni Wright", "Dating", (22, 11), (22, 18)),
@@ -302,7 +307,7 @@ def _romantic_edges() -> List[Tuple]:
         ("Owen Hunt", "Beth Whitman", "Dating", (5, 1), (5, 1)),
         ("Owen Hunt", "Cristina Yang", "Married", (5, 6), (9, 1)),
         ("Owen Hunt", "Emma Marling", "Dating", (10, 4), (10, 1)),
-        ("Owen Hunt", "Teddy Altman", "Married", (14, 1), None),
+        ("Owen Hunt", "Teddy Altman", "Married", (14, 17), None),
         ("Owen Hunt", "Carina DeLuca", "Fling", (14, 6), (14, 1)),
         ("Owen Hunt", "Nora", "Fling", (21, 13), (21, 13)),
         ("Teddy Altman", "Henry Burton", "Married", (7, 10), (8, 1)),
@@ -324,7 +329,7 @@ def _romantic_edges() -> List[Tuple]:
         ("Jackson Avery", "Mara Keaton", "Fling", (8, 17), (8, 1)),
         ("Jackson Avery", "Stephanie Edwards", "Dating", (9, 10), (10, 1)),
         ("Jackson Avery", "Priya", "Dating", (14, 1), (14, 1)),
-        ("Jackson Avery", "Jo Wilson", "Fling", (17, 1), (17, 1)),
+        ("Jackson Avery", "Jo Wilson", "Fling", (17, 4), (17, 1)),
         ("Jackson Avery", "Maggie Pierce", "Dating", (14, 14), (16, 1)),
         ("Jackson Avery", "Victoria Hughes", "Dating", (16, 3), (16, 1)),
         ("Maggie Pierce", "Ethan Boyd", "Dating", (11, 1), (12, 1)),
@@ -332,7 +337,7 @@ def _romantic_edges() -> List[Tuple]:
         ("Maggie Pierce", "Andrew DeLuca", "Dating", (12, 3), (12, 1)),
         ("Maggie Pierce", "Clive Johnson", "Dating", (14, 9), (14, 1)),
         ("Maggie Pierce", "Winston Ndugu", "Married", (16, 19), (19, 1)),
-        ("Andrew DeLuca", "Sam Bello", "Dating", (14, 1), (14, 1)),
+        ("Andrew DeLuca", "Sam Bello", "Dating", (14, 7), (14, 1)),
 
         # --- Bailey / Webber / the older generation ---------------------------
         ("Miranda Bailey", "Tucker Jones", "Married", (1, 1), (6, 1)),
@@ -357,7 +362,7 @@ def _romantic_edges() -> List[Tuple]:
         ("Benson Kwan", "Molly Tran", "Dating", (21, 2), (21, 1)),
         ("Lucas Adams", "Cara Ford", "Fling", (19, 10), (19, 1)),
         ("Lucas Adams", "Dani Spencer", "Fling", (22, 16), (22, 16)),
-        ("Simone Griffith", "Trey Delgado", "Dating", (19, 1), (19, 1)),
+        ("Simone Griffith", "Trey Delgado", "Dating", (19, 9), (19, 1)),
         ("Simone Griffith", "Lucas Adams", "Dating", (19, 9), (22, 2)),
         ("Simone Griffith", "Wes Bryant", "Fling", (21, 17), None),
         ("Lucas Adams", "Katie Rogers", "Dating", (22, 8), None),
