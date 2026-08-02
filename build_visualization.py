@@ -308,6 +308,16 @@ TEMPLATE = r"""<!DOCTYPE html>
     font-family: 'IBM Plex Mono', monospace; font-size: 12px;
   }
   .trace-form input { margin-bottom: 0; }
+  .stats { margin-bottom: 16px; display: grid; gap: 6px; }
+  .stat {
+    display: flex; align-items: baseline; gap: 8px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
+  }
+  .stat b {
+    font-family: 'Archivo', sans-serif; font-size: 15px; color: var(--bone);
+    min-width: 34px;
+  }
+  .stat .who { color: var(--bone); }
   .credit {
     margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule);
     font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; line-height: 1.7;
@@ -521,6 +531,8 @@ TEMPLATE = r"""<!DOCTYPE html>
     </section>
 
     <section data-panel="key" hidden>
+    <h2>At this point in the show</h2>
+    <div class="stats" id="stats"></div>
     <h2>Markers</h2>
     <div class="glyphkey">
       <span><svg viewBox="-10 -10 20 20"><circle r="8" fill="none" stroke="#E8B84B" stroke-width="1.4"/><text y="3.2" text-anchor="middle" fill="#E8B84B" font-size="9">&#9829;</text></svg> Married</span>
@@ -696,6 +708,14 @@ const divorced = l => l.split && wed(l) && seen(l.show, l.ss, l.se);
 // Over, as of where the viewer is. A relationship that ends in a later season
 // is still going from their point of view.
 const over = l => l.ls !== null && seen(l.show, l.ls, l.le);
+
+// THE predicate for "is this link on screen". Module scope on purpose: it used
+// to live inside applyCutoff(), so the stats panel and the path tracer each
+// grew their own copy, and a copy of this is a copy that can disagree.
+const onChart = l => aired(l) && active.has(displayType(l))
+  && (showPast || l.type === 'Parent' || !over(l));
+const drawnLinks = () => DATA.links.filter(
+  l => onChart(l) && visible.has(l.source.id) && visible.has(l.target.id));
 
 // Episode precision only shows on a show's final season, which is where the
 // viewer is likely to be mid-run. Spinoffs carry their key so "S19 S3" cannot
@@ -986,9 +1006,6 @@ function updateLabels() {
 let visible = new Set();
 
 function applyCutoff(refit = true) {
-  const onChart = l => aired(l) && active.has(displayType(l))
-    && (showPast || l.type === 'Parent' || !over(l));
-
   // Derived from onChart, not from aired() alone, so the cast matches the
   // connections. Unticking "Blood relative" used to leave the children on the
   // chart as dots with nothing attached to them, because the links went away
@@ -1087,6 +1104,7 @@ function applyCutoff(refit = true) {
   else if (selected) select(DATA.nodes.find(n => n.id === selected));
 
   refreshCastList();
+  refreshStats();
   updateLabels();
   // A traced route can be invalidated by any of the above -- winding the cutoff
   // back can remove a link the path ran through.
@@ -1310,6 +1328,67 @@ function applySearch() {
 searchInput.addEventListener('input', applySearch);
 searchInput.addEventListener('search', applySearch);
 
+/* ---- stats --------------------------------------------------------------- */
+// Everything here is computed from what is CURRENTLY DRAWN, not from the whole
+// dataset -- otherwise it would quietly answer questions about episodes the
+// viewer has not reached. Recomputed on every cutoff change, so it also doubles
+// as a readout while the timeline plays.
+function refreshStats() {
+  const links = drawnLinks();
+
+  const degree = new Map();
+  const romantic = links.filter(l => l.type !== 'Parent');
+  for (const l of romantic) {
+    degree.set(l.source.id, (degree.get(l.source.id) || 0) + 1);
+    degree.set(l.target.id, (degree.get(l.target.id) || 0) + 1);
+  }
+  const busiest = [...degree.entries()].sort((a, b) => b[1] - a[1])[0];
+
+  // Largest connected group, over romantic ties only: "how much of this cast is
+  // one tangle" is the question a relationship chart is actually asking.
+  const adj = new Map();
+  for (const l of romantic) {
+    if (!adj.has(l.source.id)) adj.set(l.source.id, []);
+    if (!adj.has(l.target.id)) adj.set(l.target.id, []);
+    adj.get(l.source.id).push(l.target.id);
+    adj.get(l.target.id).push(l.source.id);
+  }
+  const seenIds = new Set();
+  let biggest = 0;
+  for (const start of adj.keys()) {
+    if (seenIds.has(start)) continue;
+    let size = 0;
+    const stack = [start];
+    seenIds.add(start);
+    while (stack.length) {
+      size++;
+      for (const next of adj.get(stack.pop()) || []) {
+        if (seenIds.has(next)) continue;
+        seenIds.add(next);
+        stack.push(next);
+      }
+    }
+    biggest = Math.max(biggest, size);
+  }
+
+  const married = romantic.filter(l => displayType(l) === 'Married').length;
+  const split = romantic.filter(divorced).length;
+  const going = romantic.filter(l => !over(l)).length;
+
+  const rows = [
+    ['♥', married, 'marriages', split ? `${split} since ended` : ''],
+    ['•', going, 'still going', ''],
+    ['●', biggest, 'in the largest tangle',
+      adj.size ? `of ${adj.size} with any tie` : ''],
+  ];
+  if (busiest) rows.push(['⚑', busiest[1], 'ties', busiest[0]]);
+
+  d3.select('#stats').selectAll('.stat')
+    .data(rows)
+    .join('div').attr('class', 'stat')
+    .html(d => `<b>${d[1]}</b> ${d[2]}${d[3] ? ` <span class="who">${d[3]}</span>` : ''}`);
+}
+
 // Native autocomplete, refreshed whenever the cast on screen changes.
 function refreshCastList() {
   const names = DATA.nodes
@@ -1457,13 +1536,6 @@ document.getElementById('play-show').addEventListener('change', stopPlayback);
 // graph and then hiding the result would leak exactly what the cutoff exists to
 // hide -- "Meredith to Maya in 3 steps" tells you the steps exist.
 // (pathIds is declared up with the other boot-time state.)
-
-function drawnLinks() {
-  return DATA.links.filter(l =>
-    aired(l) && active.has(displayType(l))
-    && (showPast || l.type === 'Parent' || !over(l))
-    && visible.has(l.source.id) && visible.has(l.target.id));
-}
 
 function shortestPath(fromId, toId) {
   if (fromId === toId) return [fromId];

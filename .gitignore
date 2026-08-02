@@ -10,3 +10,7 @@ portraits/
 greys_network.html
 node_modules/
 __pycache__/
+
+# Build artifacts
+table.html
+drift_report.md

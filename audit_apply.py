@@ -12,10 +12,27 @@ source of truth) and marked Verified=yes.
 """
 
 import csv
+import os
 import sys
 
 TRACKER = "audit_tracker.csv"
 EDGES = "edges.csv"
+CITATIONS = "citations.csv"
+
+
+def load_citations():
+    """Evidence per tie, keyed by the unordered pair.
+
+    Kept in its own file rather than in greys_network.py so the reasoning is
+    reviewable next to the data without wading through Python literals. A tie
+    with no row here is not a failure -- it means nobody has recorded why yet,
+    and the tracker says so instead of implying the value is sourced.
+    """
+    if not os.path.exists(CITATIONS):
+        return {}
+    with open(CITATIONS, encoding="utf-8") as fh:
+        return {frozenset({r["Source"], r["Target"]}): r
+                for r in csv.DictReader(fh)}
 
 
 def load_edges():

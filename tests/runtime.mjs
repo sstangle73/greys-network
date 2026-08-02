@@ -139,6 +139,21 @@ if (!errors.length) {
                                    if(!/GA=7\./.test(h)) throw new Error(`hash missing cutoff: ${h}`);}],
     // Tabs: only one group is mounted at a time, which is what keeps the rail
     // short enough that its collapse button stays reachable on a phone.
+    // Stats describe what is DRAWN, never the whole dataset -- otherwise they
+    // would quietly answer questions about episodes not yet reached.
+    ['stats respect the cutoff',()=>{const read=()=>doc.getElementById('stats').textContent;
+                                   doc.getElementById('season').value=22;
+                                   doc.getElementById('episode').value=2;
+                                   fire(doc.getElementById('season'),'input');
+                                   const late=read();
+                                   if(!/marriages/.test(late)) throw new Error(`no stats: ${late}`);
+                                   doc.getElementById('season').value=2;
+                                   fire(doc.getElementById('season'),'input');
+                                   const early=read();
+                                   if(early===late) throw new Error('stats did not change with the cutoff');
+                                   const n=s=>parseInt((s.match(/(\d+)\s*marriages/)||[])[1]||'0',10);
+                                   if(n(early)>n(late))
+                                     throw new Error(`S2 shows more marriages than S22: ${n(early)} vs ${n(late)}`);}],
     ['tabs mount one panel',  ()=>{const tabs=[...doc.querySelectorAll('.tabs [role="tab"]')];
                                    if(tabs.length<4) throw new Error(`${tabs.length} tabs`);
                                    const open=[...doc.querySelectorAll('[data-panel]')].filter(p=>!p.hidden);

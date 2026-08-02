@@ -399,9 +399,61 @@ def diff(edges_path="edges.csv") -> None:
         print(f"  ~ {' & '.join(sorted(k))}: ours={ours} wiki={guess}")
 
 
+def drift(edges_path="edges.csv", report="drift_report.md") -> int:
+    """Harvest, parse and diff in one pass, then write a report.
+
+    Meant for a scheduled pipeline. Season 22 is still airing and the wiki keeps
+    moving, so a dataset that was right in August is not automatically right in
+    November. Exits non-zero when the wiki has ties the dataset does not, which
+    makes the pipeline fail -- and a failed pipeline is already an email, so
+    this needs no API token and no bot account.
+    """
+    harvest()
+    parse()
+
+    mine = defaultdict(set)
+    with open(edges_path, encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            if row["Relationship_Type"] == "Parent":
+                continue
+            mine[frozenset({row["Source"], row["Target"]})].add(row["Relationship_Type"])
+
+    theirs = {}
+    with open("candidate_edges.csv", encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            theirs[frozenset({row["Subject"], row["Partner"]})] = row
+
+    missing = sorted((k for k in theirs if k not in mine), key=lambda s: sorted(s))
+
+    lines = ["# Wiki drift report", ""]
+    if not missing:
+        lines += ["No new ties. The wiki and `edges.csv` agree on who exists.", ""]
+    else:
+        lines += [
+            f"The wiki now has **{len(missing)} tie(s)** that `edges.csv` does not.",
+            "",
+            "Every one of these is a CANDIDATE, not a correction. Before adding any",
+            "of them, check the prose against the scope rule -- a `==Romantic==`",
+            "section is not proof of a tie, and an episode citation often marks",
+            "where a relationship was narrated rather than when it happened.",
+            "",
+        ]
+        for k in missing:
+            row = theirs[k]
+            hint = (f" _(hint: S{row['Season_Hint_First']}-S{row['Season_Hint_Last']}"
+                    f" -- verify, do not copy)_" if row["Season_Hint_First"] else "")
+            lines.append(f"- **{' & '.join(sorted(k))}** — {row['Type_Guess']}{hint}")
+        lines.append("")
+
+    with open(report, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write("\n".join(lines))
+    print("\n".join(lines))
+    return 1 if missing else 0
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("command", choices=["harvest", "parse", "diff"])
+    ap.add_argument("command", choices=["harvest", "parse", "diff", "drift"])
     ap.add_argument("--edges", default="edges.csv")
     args = ap.parse_args()
 
@@ -409,5 +461,7 @@ if __name__ == "__main__":
         harvest()
     elif args.command == "parse":
         parse()
+    elif args.command == "drift":
+        sys.exit(drift(args.edges))
     else:
         diff(args.edges)

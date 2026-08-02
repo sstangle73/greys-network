@@ -23,6 +23,7 @@ build:
   script:
     - python greys_network.py --outdir .
     - python build_visualization.py --indir .
+    - python build_table.py --indir .
   artifacts:
     expire_in: 1 day
     paths:
@@ -30,6 +31,7 @@ build:
       - nodes.csv
       - shows.csv
       - greys_network.html
+      - table.html
 
 test:
   stage: test
@@ -76,9 +78,35 @@ pages:
     - python build_visualization.py --indir .
     - mkdir -p public
     - cp greys_network.html public/index.html
-    - cp edges.csv nodes.csv shows.csv audit_tracker.csv public/
+    - cp table.html public/table.html
+    - cp edges.csv nodes.csv shows.csv audit_tracker.csv citations.csv public/
     - if [ -d portraits ]; then cp -r portraits public/; fi
   artifacts:
     paths: [public]
   rules:
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+
+# Scheduled only. Season 22 is still airing and the wiki keeps moving, so a
+# dataset that was right in August is not automatically right in November.
+# Failing the job IS the alert -- GitLab already emails on pipeline failure, so
+# this needs no API token and no bot account.
+drift:
+  stage: test
+  image: python:3.12-slim
+  needs: []
+  cache:
+    key: wikicache-v1
+    paths:
+      - wikicache/
+  before_script:
+    - pip install --quiet pandas
+  script:
+    - python greys_network.py --outdir .
+    - python wiki_harvest.py drift
+  artifacts:
+    when: always
+    expire_in: 30 days
+    paths:
+      - drift_report.md
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
