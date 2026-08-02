@@ -214,6 +214,38 @@ TEMPLATE = r"""<!DOCTYPE html>
     letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
   }
   .play-form button[aria-pressed="true"] { background: var(--fling); color: var(--ground); }
+  /* Transport sits top-centre: the rail owns bottom-left, the fit button
+     bottom/top-right, and the masthead top-left. */
+  .transport {
+    position: fixed; top: 92px; left: 50%; transform: translateX(-50%); z-index: 5;
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 12px 7px 8px;
+    background: rgba(16,57,61,.92); border: 1px solid var(--rule);
+    backdrop-filter: blur(6px);
+  }
+  .transport button {
+    flex: 0 0 auto; width: 26px; height: 26px; padding: 0;
+    background: var(--rule); border: 0; border-radius: 50%; color: var(--bone);
+    font-size: 11px; line-height: 1; cursor: pointer;
+  }
+  .transport button[aria-pressed="true"] { background: var(--fling); color: var(--ground); }
+  .transport-read {
+    display: flex; gap: 12px;
+    font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 14px;
+    letter-spacing: .08em; white-space: nowrap;
+  }
+  .transport-read .unit { display: flex; align-items: baseline; gap: 5px; }
+  .transport-read .who {
+    font-family: 'IBM Plex Mono', monospace; font-weight: 400; font-size: 9px;
+    letter-spacing: .12em; color: var(--muted); text-transform: uppercase;
+  }
+  .transport-read .idle { color: var(--muted); }
+  @media (max-width: 720px) {
+    .transport { top: auto; bottom: 12px; left: 12px; right: 12px; transform: none; }
+    .rail.collapsed ~ .transport { bottom: 64px; }
+    .rail:not(.collapsed) ~ .transport { display: none; }
+    .transport-read { font-size: 12px; gap: 8px; overflow-x: auto; }
+  }
   .rail-body {
     overflow-y: auto; min-height: 0;
     overscroll-behavior: contain;      /* don't scroll the page behind it */
@@ -511,6 +543,11 @@ TEMPLATE = r"""<!DOCTYPE html>
     </section>
 
   </div>
+</div>
+
+<div class="transport" id="transport">
+  <button id="play-mini" type="button" aria-pressed="false" aria-label="Play the timeline">&#9654;</button>
+  <div class="transport-read" id="transport-read"></div>
 </div>
 
 <button class="btn-fit" id="fit">Fit to screen</button>
@@ -1017,8 +1054,27 @@ function applyCutoff(refit = true) {
     const sfx = sh.key === 'GA' ? '' : '-' + sh.key;
     const c = cuts[sh.key];
     d3.select('#cutoff-read' + sfx)
-      .text(enabled.has(sh.key) ? `S${c.s} E${String(c.e).padStart(2, '0')}` : 'hidden');
+      .text(!enabled.has(sh.key) ? 'hidden'
+        : c.s < 1 ? 'not yet'
+        : `S${c.s} E${String(c.e).padStart(2, '0')}`);
   });
+  // Same information on the chart itself, so the position is readable while the
+  // timeline runs without the rail open.
+  d3.select('#transport-read').selectAll('.unit')
+    .data(DATA.shows.filter(sh => enabled.has(sh.key)), sh => sh.key)
+    .join(enter => {
+      const u = enter.append('div').attr('class', 'unit');
+      u.append('span').attr('class', 'who');
+      u.append('span').attr('class', 'at');
+      return u;
+    })
+    .each(function (sh) {
+      const c = cuts[sh.key];
+      d3.select(this).select('.who').text(sh.key);
+      d3.select(this).select('.at')
+        .attr('class', c.s < 1 ? 'at idle' : 'at')
+        .text(c.s < 1 ? '—' : `S${c.s} E${String(c.e).padStart(2, '0')}`);
+    });
   d3.select('#tally').text(`${visible.size} people, ${drawn} connections`);
 
   // The note below is about the CUTOFF specifically -- "later" means "hasn't
@@ -1280,6 +1336,13 @@ tabButtons.forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)
 let playTimer = null;
 let playShow = 'GA';
 
+// Airdate alignment. The spinoffs premiered alongside a specific Grey's season
+// -- Private Practice season 1 opposite Grey's season 4, Station 19 season 1
+// opposite Grey's season 14 -- so "play the universe" drives the Grey's clock
+// and derives the others from it. Season order and broadcast order are not the
+// same thing, and this is the difference.
+const AIRDATE_OFFSET = { GA: 0, PP: 3, S19: 13 };
+
 function playableEnd(key) {
   const meta = SHOW_BY_KEY[key];
   return { s: meta.seasons, e: meta.episodes };
@@ -1290,63 +1353,101 @@ function atEnd(key) {
   return cuts[key].s >= end.s && cuts[key].e >= end.e;
 }
 
+// Push a cutoff into both the state and its slider.
+function setCut(key, s, e) {
+  cuts[key] = { s, e };
+  const sfx = key === 'GA' ? '' : '-' + key;
+  const ss = document.getElementById('season' + sfx);
+  const ee = document.getElementById('episode' + sfx);
+  if (ss) ss.value = Math.max(1, s);
+  if (ee) ee.value = Math.max(1, e);
+}
+
+// Given where Grey's is, where should the other shows be?
+function syncUniverse(gaSeason, gaEpisode) {
+  for (const key of Object.keys(cuts)) {
+    if (key === 'GA') continue;
+    const meta = SHOW_BY_KEY[key];
+    const season = gaSeason - (AIRDATE_OFFSET[key] || 0);
+    if (season < 1) {
+      // Hasn't premiered yet at this point in the run. Season 0 reads as
+      // "nothing has aired" everywhere that compares against a cutoff.
+      setCut(key, 0, 0);
+    } else if (season > meta.seasons) {
+      setCut(key, meta.seasons, meta.episodes);       // finished; hold at the end
+    } else {
+      setCut(key, season, Math.min(gaEpisode, meta.episodes));
+    }
+  }
+}
+
 function stepPlayback() {
-  const key = playShow;
+  const universe = playShow === 'ALL';
+  const key = universe ? 'GA' : playShow;
   const meta = SHOW_BY_KEY[key];
   let { s, e } = cuts[key];
   e += 1;
   if (e > meta.episodes) { e = 1; s += 1; }
   if (s > meta.seasons) { stopPlayback(); return; }
-  cuts[key] = { s, e };
-
-  const sfx = key === 'GA' ? '' : '-' + key;
-  const ss = document.getElementById('season' + sfx);
-  const ee = document.getElementById('episode' + sfx);
-  if (ss) ss.value = s;
-  if (ee) ee.value = e;
+  setCut(key, s, e);
+  if (universe) syncUniverse(s, e);
   applyCutoff(false);
   if (atEnd(key)) stopPlayback();
 }
 
+function setPlayUI(running) {
+  const btn = document.getElementById('play');
+  const mini = document.getElementById('play-mini');
+  if (btn) {
+    btn.textContent = running ? 'Pause' : 'Play';
+    btn.setAttribute('aria-pressed', String(running));
+  }
+  if (mini) {
+    mini.innerHTML = running ? '⏸' : '▶';
+    mini.setAttribute('aria-pressed', String(running));
+    mini.setAttribute('aria-label', running ? 'Pause the timeline' : 'Play the timeline');
+  }
+}
+
 function stopPlayback() {
   if (playTimer) { clearInterval(playTimer); playTimer = null; }
-  const btn = document.getElementById('play');
-  if (btn) { btn.textContent = 'Play'; btn.setAttribute('aria-pressed', 'false'); }
+  setPlayUI(false);
 }
 
 function startPlayback() {
   const key = document.getElementById('play-show').value;
   playShow = key;
-  if (!enabled.has(key)) {
-    const box = document.getElementById(key === 'GA' ? 'on' : 'on-' + key);
+  const driver = key === 'ALL' ? 'GA' : key;
+
+  const turnOn = k => {
+    if (enabled.has(k)) return;
+    const box = document.getElementById(k === 'GA' ? 'on' : 'on-' + k);
     if (box) { box.checked = true; box.dispatchEvent(new Event('change')); }
-  }
+  };
+  key === 'ALL' ? Object.keys(cuts).forEach(turnOn) : turnOn(key);
+
   // Starting from the end and immediately stopping is a confusing no-op, so
   // rewind to the beginning first.
-  if (atEnd(key)) {
-    cuts[key] = { s: 1, e: 1 };
-    const sfx = key === 'GA' ? '' : '-' + key;
-    const ss = document.getElementById('season' + sfx);
-    const ee = document.getElementById('episode' + sfx);
-    if (ss) ss.value = 1;
-    if (ee) ee.value = 1;
+  if (atEnd(driver)) {
+    setCut(driver, 1, 1);
+    if (key === 'ALL') syncUniverse(1, 1);
     applyCutoff(false);
   }
-  const btn = document.getElementById('play');
-  btn.textContent = 'Pause';
-  btn.setAttribute('aria-pressed', 'true');
+  setPlayUI(true);
   playTimer = setInterval(stepPlayback, 260);
 }
 
+// "Whole universe" first, because watching the three shows interleave in
+// broadcast order is the more interesting thing this can do.
 d3.select('#play-show').selectAll('option')
-  .data(DATA.shows)
+  .data([{ key: 'ALL', title: 'Whole universe' }].concat(DATA.shows))
   .join('option')
   .attr('value', sh => sh.key)
   .text(sh => sh.title);
 
-document.getElementById('play').addEventListener('click', () => {
-  playTimer ? stopPlayback() : startPlayback();
-});
+function togglePlayback() { playTimer ? stopPlayback() : startPlayback(); }
+document.getElementById('play').addEventListener('click', togglePlayback);
+document.getElementById('play-mini').addEventListener('click', togglePlayback);
 // Touching any cutoff by hand means you have taken over.
 document.getElementById('play-show').addEventListener('change', stopPlayback);
 
@@ -1519,7 +1620,9 @@ function readHash() {
         if (box) { box.checked = false; box.dispatchEvent(new Event('change')); }
       } else {
         const [s, e] = value.split('.').map(Number);
-        if (s) {
+        // 0 is meaningful in universe playback: "this show had not premiered
+        // yet". A plain truthiness check silently dropped it.
+        if (!isNaN(s)) {
           cuts[key] = { s, e: e || 1 };
           const sfx = key === 'GA' ? '' : '-' + key;
           const ss = document.getElementById('season' + sfx);

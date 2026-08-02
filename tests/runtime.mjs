@@ -152,7 +152,10 @@ if (!errors.length) {
     // Playback drives ONE show's cutoff. Pressing play at the end rewinds first
     // -- otherwise it stops instantly and looks broken. That rewind is
     // synchronous, so it can be asserted without waiting on the interval.
-    ['play rewinds and engages',()=>{const season=doc.getElementById('season');
+    ['play one show leaves others alone',()=>{
+                                   const sel=doc.getElementById('play-show');
+                                   sel.value='GA'; fire(sel,'change');
+                                   const season=doc.getElementById('season');
                                    const ppBefore=doc.getElementById('season-PP').value;
                                    season.value=22; doc.getElementById('episode').value=27;
                                    fire(season,'input');
@@ -167,6 +170,38 @@ if (!errors.length) {
                                    fire(btn,'click');
                                    if(btn.getAttribute('aria-pressed')!=='false')
                                      throw new Error('pause did not disengage');}],
+    // Universe playback aligns the spinoffs to BROADCAST order: Private
+    // Practice season 1 aired opposite Grey's season 4, Station 19 season 1
+    // opposite Grey's season 14. Before those points they had not premiered.
+    ['universe play aligns by airdate',()=>{
+                                   const sel=doc.getElementById('play-show');
+                                   sel.value='ALL'; fire(sel,'change');
+                                   const season=doc.getElementById('season');
+                                   season.value=22; doc.getElementById('episode').value=27;
+                                   fire(season,'input');
+                                   const btn=doc.getElementById('play');
+                                   fire(btn,'click');   // rewinds the universe to the start
+                                   const read=doc.getElementById('transport-read').textContent;
+                                   if(!/—/.test(read))
+                                     throw new Error(`spinoffs should read as not-yet-aired at GA S1: ${read}`);
+                                   fire(btn,'click');
+                                   sel.value='GA'; fire(sel,'change');}],
+    // The on-screen readout has to track the cutoff, not just the rail.
+    ['transport shows the position',()=>{
+                                   doc.getElementById('season').value=9;
+                                   fire(doc.getElementById('season'),'input');
+                                   const read=doc.getElementById('transport-read').textContent;
+                                   if(!/GA/.test(read)||!/S9/.test(read))
+                                     throw new Error(`transport reads "${read}"`);}],
+    ['mini play button mirrors the rail',()=>{
+                                   const mini=doc.getElementById('play-mini');
+                                   const btn=doc.getElementById('play');
+                                   fire(mini,'click');
+                                   if(btn.getAttribute('aria-pressed')!=='true')
+                                     throw new Error('rail button did not follow the mini one');
+                                   fire(mini,'click');
+                                   if(btn.getAttribute('aria-pressed')!=='false')
+                                     throw new Error('rail button did not stop');}],
     ['hidden types land in the URL',()=>{const cb=doc.querySelector('[data-type="Fling"]');
                                    cb.checked=false; fire(cb,'change');
                                    if(!/hide=.*Fling/.test(window.location.hash))
