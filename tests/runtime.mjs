@@ -141,6 +141,40 @@ if (!errors.length) {
     // short enough that its collapse button stays reachable on a phone.
     // Stats describe what is DRAWN, never the whole dataset -- otherwise they
     // would quietly answer questions about episodes not yet reached.
+    // Report form. The value of it is the attached chart state -- a bug report
+    // about a spoiler-aware chart is unactionable without knowing where the
+    // reporter was standing.
+    ['report captures chart state',()=>{
+                                   doc.getElementById('season').value=7;
+                                   fire(doc.getElementById('season'),'input');
+                                   fire(doc.getElementById('report-open'),'click');
+                                   const ctx=doc.getElementById('report-preview').textContent;
+                                   for(const want of ['GA: S7','PP:','S19:','on screen','Permalink'])
+                                     if(!ctx.includes(want)) throw new Error(`context missing ${want}: ${ctx}`);}],
+    ['report needs a description',()=>{
+                                   doc.getElementById('report-body').value='';
+                                   fire(doc.getElementById('report-send'),'click');
+                                   const note=doc.getElementById('report-note').textContent;
+                                   if(!/describe/i.test(note)) throw new Error(`expected a prompt, got: ${note}`);}],
+    ['report offers both routes',()=>{
+                                   doc.getElementById('report-body').value='A date looks wrong here.';
+                                   fire(doc.getElementById('report-send'),'click');
+                                   const note=doc.getElementById('report-note').innerHTML;
+                                   if(!/issues\/new/.test(note)) throw new Error('no GitLab issue link');
+                                   if(!/mailto:/.test(note)) throw new Error('no no-account email route');}],
+    // A filled honeypot must close silently -- never tell a bot it was caught.
+    ['honeypot closes silently',()=>{
+                                   fire(doc.getElementById('report-open'),'click');
+                                   doc.getElementById('report-body').value='spam spam spam';
+                                   doc.getElementById('report-website').value='http://example.com';
+                                   doc.getElementById('report-note').textContent='';
+                                   fire(doc.getElementById('report-send'),'click');
+                                   const note=doc.getElementById('report-note').textContent;
+                                   if(note) throw new Error(`told the bot something: ${note}`);
+                                   doc.getElementById('report-website').value='';}],
+    ['no credential in the page',()=>{
+                                   if(/PRIVATE-TOKEN|glpat-/.test(script))
+                                     throw new Error('a token appears to be shipped in the page');}],
     ['stats respect the cutoff',()=>{const read=()=>doc.getElementById('stats').textContent;
                                    doc.getElementById('season').value=22;
                                    doc.getElementById('episode').value=2;

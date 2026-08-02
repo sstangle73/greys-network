@@ -308,6 +308,54 @@ TEMPLATE = r"""<!DOCTYPE html>
     font-family: 'IBM Plex Mono', monospace; font-size: 12px;
   }
   .trace-form input { margin-bottom: 0; }
+  .linkish {
+    display: block; margin-top: 8px; padding: 0;
+    background: none; border: 0; color: var(--dating); cursor: pointer;
+    font-family: inherit; font-size: inherit; text-decoration: underline;
+  }
+  #report {
+    width: min(440px, calc(100vw - 32px)); padding: 20px; border: 1px solid var(--rule);
+    background: var(--panel); color: var(--bone);
+  }
+  #report::backdrop { background: rgba(4,20,22,.72); }
+  #report h2 {
+    margin: 0 0 8px; font-family: 'Archivo', sans-serif; font-size: 16px;
+    letter-spacing: .04em; text-transform: none; color: var(--bone);
+  }
+  .report-intro { margin: 0 0 14px; font-size: 12.5px; line-height: 1.5; color: var(--muted); }
+  #report label {
+    display: block; margin: 0 0 5px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    letter-spacing: .14em; text-transform: uppercase; color: var(--muted);
+  }
+  #report select, #report textarea {
+    width: 100%; margin-bottom: 14px; padding: 8px 10px;
+    background: var(--ground); border: 1px solid var(--rule); color: var(--bone);
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; resize: vertical;
+  }
+  #report select:focus, #report textarea:focus {
+    outline: 2px solid var(--dating); outline-offset: 1px;
+  }
+  /* Off-screen rather than display:none -- a bot reading the DOM still finds it,
+     which is the point, but no human or screen reader is offered it. */
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .report-context { margin-bottom: 14px; font-size: 11px; color: var(--muted); }
+  .report-context summary { cursor: pointer; }
+  .report-context pre {
+    margin: 8px 0 0; padding: 8px; max-height: 130px; overflow: auto;
+    background: var(--ground); border: 1px solid var(--rule);
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px; white-space: pre-wrap;
+  }
+  .report-actions { display: flex; gap: 8px; }
+  .report-actions button {
+    padding: 9px 14px; background: none; border: 1px solid var(--rule);
+    color: var(--bone); cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: .1em; text-transform: uppercase;
+  }
+  .report-actions .primary { background: var(--dating); color: var(--ground); border-color: var(--dating); }
+  .report-note { margin-top: 10px; font-size: 11px; line-height: 1.6; color: var(--muted); }
+  .report-note a { color: var(--dating); }
   .stats { margin-bottom: 16px; display: grid; gap: 6px; }
   .stat {
     display: flex; align-items: baseline; gap: 8px;
@@ -551,11 +599,55 @@ TEMPLATE = r"""<!DOCTYPE html>
       whose scope rules this dataset follows.
       Facts from the <a href="https://greysanatomy.fandom.com/" target="_blank" rel="noopener noreferrer">Grey&rsquo;s Anatomy Universe Wiki</a> (CC BY-SA).
       <a href="https://gitlab.com/sstangle73/greys-network" target="_blank" rel="noopener noreferrer">Source &amp; data</a>.
+      <button type="button" id="report-open" class="linkish">Report a problem</button>
     </div>
     </section>
 
   </div>
 </div>
+
+<dialog id="report" aria-labelledby="report-title">
+  <form method="dialog" id="report-form">
+    <h2 id="report-title">Report a problem</h2>
+    <p class="report-intro">
+      Wrong date, missing relationship, something broken? Your current view is
+      attached automatically &mdash; which is the part that makes a report about
+      a spoiler-aware chart actually actionable.
+    </p>
+
+    <label for="report-kind">What sort of problem?</label>
+    <select id="report-kind">
+      <option value="Wrong data">A relationship or date looks wrong</option>
+      <option value="Missing relationship">A relationship is missing</option>
+      <option value="Spoiler leak">Something showed that should have been hidden</option>
+      <option value="Display bug">The chart looks or behaves wrongly</option>
+      <option value="Something else">Something else</option>
+    </select>
+
+    <label for="report-body">What did you see?</label>
+    <textarea id="report-body" rows="5" required
+      placeholder="e.g. Owen and Teddy show as married at S21, but they separate before that."></textarea>
+
+    <!-- Honeypot: a real person never sees this, so anything in it is a bot.
+         Only meaningful once a relay endpoint is configured; the GitLab and
+         email paths are already gated by GitLab's own auth and spam handling. -->
+    <div class="hp" aria-hidden="true">
+      <label for="report-website">Website</label>
+      <input type="text" id="report-website" name="website" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <details class="report-context">
+      <summary>What gets attached</summary>
+      <pre id="report-preview"></pre>
+    </details>
+
+    <div class="report-actions">
+      <button type="button" id="report-send" class="primary">Send report</button>
+      <button type="button" id="report-cancel">Cancel</button>
+    </div>
+    <div class="report-note" id="report-note"></div>
+  </form>
+</dialog>
 
 <div class="transport" id="transport">
   <button id="play-mini" type="button" aria-pressed="false" aria-label="Play the timeline">&#9654;</button>
@@ -1397,6 +1489,111 @@ function refreshCastList() {
   d3.select('#cast').selectAll('option').data(names)
     .join('option').attr('value', d => d);
 }
+
+/* ---- report a problem ---------------------------------------------------- */
+// Two delivery paths, neither of which requires this page to hold a credential.
+// A static page cannot keep a secret -- any token shipped here is public -- so
+// the API is never called from the browser.
+//
+//   RELAY: set this to a deployed endpoint and the form POSTs to it directly,
+//          no GitLab account needed and no mail client involved. The endpoint
+//          holds the token; see relay/ in the repo. Left empty by default
+//          because it is a service to run, not a file to ship.
+//   Otherwise: GitLab's own issue form (pre-filled, spam-handled by GitLab) for
+//          anyone with an account, and Service Desk email for anyone without.
+const RELAY = '';
+const PROJECT = 'sstangle73/greys-network';
+const SERVICE_DESK =
+  'contact-project+sstangle73-greys-network-85043144-issue-@incoming.gitlab.com';
+
+const dialog = document.getElementById('report');
+const reportNote = document.getElementById('report-note');
+
+// The whole point: a bug report about a spoiler-aware chart is unactionable
+// without knowing where the reporter was standing when they saw it.
+function reportContext() {
+  const where = DATA.shows.map(sh => {
+    if (!enabled.has(sh.key)) return `${sh.key}: off`;
+    const c = cuts[sh.key];
+    return `${sh.key}: ` + (c.s < 1 ? 'not yet aired' : `S${c.s} E${c.e}`);
+  }).join('\n  ');
+  const hidden = Object.keys(TYPES).filter(t => !active.has(t));
+  return [
+    'Chart state',
+    '  ' + where,
+    `  types hidden: ${hidden.length ? hidden.join(', ') : 'none'}`,
+    `  past relationships: ${showPast ? 'shown' : 'hidden'}`,
+    `  selected: ${selected || 'nobody'}`,
+    `  on screen: ${visible.size} people, ${drawnLinks().length} connections`,
+    '',
+    `Permalink: ${window.location.href}`,
+  ].join('\n');
+}
+
+function openReport() {
+  document.getElementById('report-preview').textContent = reportContext();
+  reportNote.textContent = '';
+  if (typeof dialog.showModal === 'function') dialog.showModal();
+  else dialog.setAttribute('open', '');
+}
+
+function closeReport() {
+  if (typeof dialog.close === 'function') dialog.close();
+  else dialog.removeAttribute('open');
+}
+
+function sendReport() {
+  const kind = document.getElementById('report-kind').value;
+  const body = document.getElementById('report-body').value.trim();
+  const trap = document.getElementById('report-website').value;
+
+  if (!body) {
+    reportNote.textContent = 'Please describe what you saw first.';
+    return;
+  }
+  // Silently accept and discard: telling a bot it failed just teaches it.
+  if (trap) { closeReport(); return; }
+
+  const title = `[${kind}] reported from the chart`;
+  const full = `${body}\n\n---\n${reportContext()}`;
+
+  if (RELAY) {
+    reportNote.textContent = 'Sending…';
+    fetch(RELAY, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title, body: full, website: trap }),
+    })
+      .then(r => {
+        if (!r.ok) throw new Error(r.status);
+        reportNote.textContent = 'Thank you — your report was filed.';
+        setTimeout(closeReport, 1400);
+      })
+      .catch(() => {
+        reportNote.innerHTML =
+          'That did not go through. You can ' + fallbackLinks(title, full);
+      });
+    return;
+  }
+
+  reportNote.innerHTML = 'Choose how to send it: ' + fallbackLinks(title, full);
+}
+
+function fallbackLinks(title, full) {
+  const issue = `https://gitlab.com/${PROJECT}/-/issues/new`
+    + `?issue[title]=${encodeURIComponent(title)}`
+    + `&issue[description]=${encodeURIComponent(full)}`;
+  const mail = `mailto:${SERVICE_DESK}`
+    + `?subject=${encodeURIComponent(title)}`
+    + `&body=${encodeURIComponent(full)}`;
+  return `<a href="${issue}" target="_blank" rel="noopener noreferrer">open a GitLab issue</a>`
+    + ` (needs an account, everything pre-filled), or `
+    + `<a href="${mail}">send it by email</a> (no account needed).`;
+}
+
+document.getElementById('report-open').addEventListener('click', openReport);
+document.getElementById('report-cancel').addEventListener('click', closeReport);
+document.getElementById('report-send').addEventListener('click', sendReport);
 
 /* ---- rail tabs ----------------------------------------------------------- */
 const tabButtons = [...document.querySelectorAll('.tabs [role="tab"]')];

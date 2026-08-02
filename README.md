@@ -104,6 +104,23 @@ and the partners deliberately excluded for never appearing on screen.
 Where a date is genuinely uncertain it is dated **late** on purpose. A too-late
 date hides something you have already seen; a too-early one spoils you.
 
+## Reporting a problem
+
+There's a **Report a problem** button in the chart's credits. It attaches your
+current view automatically — cutoffs, filters, selection, permalink — which is
+the part that makes a report about a spoiler-aware chart actionable at all.
+
+By default it offers two routes: a pre-filled GitLab issue (needs an account),
+or Service Desk email (doesn't). Neither requires the page to hold a
+credential, because a static page can't keep one — anything shipped in it is
+public.
+
+`relay/` contains an optional Cloudflare Worker that accepts the form directly,
+so no account or mail client is needed. It holds the API token server-side and
+adds origin checks, a honeypot and per-IP rate limiting. Deploy it, set `RELAY`
+in `build_visualization.py` to its URL, and the form switches over. It is left
+off by default because it's a service to run, not a file to ship.
+
 ## Sources & credit
 
 **The idea came from Dana's "romantic web" infographic**
