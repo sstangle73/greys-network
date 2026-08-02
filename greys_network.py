@@ -262,7 +262,7 @@ def _romantic_edges() -> List[Tuple]:
     return [
         # --- Meredith Grey ---------------------------------------------------
         ("Meredith Grey", "Derek Shepherd", "Married", (1, 1), (11, 1)),
-        ("Meredith Grey", "Finn Dandridge", "Dating", (2, 1), (3, 4)),
+        ("Meredith Grey", "Finn Dandridge", "Dating", (2, 23), (3, 4)),
         ("Meredith Grey", "George O'Malley", "Fling", (2, 12), (2, 1)),
         ("Meredith Grey", "Steve Murphy", "Fling", (2, 10), (2, 1)),
         ("Meredith Grey", "William Thorpe", "Dating", (12, 13), (12, 16)),
@@ -273,9 +273,9 @@ def _romantic_edges() -> List[Tuple]:
 
         # --- Derek / Addison / Mark ------------------------------------------
         ("Derek Shepherd", "Addison Montgomery", "Married", (1, 9), (3, 5)),
-        ("Derek Shepherd", "Rose", "Dating", (4, 1), (5, 2)),
+        ("Derek Shepherd", "Rose", "Dating", (4, 11), (5, 2)),
         ("Addison Montgomery", "Mark Sloan", "Fling", (2, 18), (3, 21)),
-        ("Addison Montgomery", "Alex Karev", "Fling", (3, 1), (3, 1)),
+        ("Addison Montgomery", "Alex Karev", "Fling", (3, 21), (3, 1)),
         ("Mark Sloan", "Lexie Grey", "Dating", (5, 10), (8, 24)),
         ("Mark Sloan", "Callie Torres", "Fling", (3, 5), (7, 10)),
         ("Mark Sloan", "Reed Adamson", "Fling", (6, 22), (6, 1)),
@@ -303,7 +303,7 @@ def _romantic_edges() -> List[Tuple]:
         ("Izzie Stevens", "Alex Karev", "Married", (2, 5), (6, 21)),
         ("Alex Karev", "Olivia Harper", "Fling", (2, 10), (2, 1)),
         ("Alex Karev", "Rebecca Pope", "Dating", (4, 10), (4, 17)),
-        ("Alex Karev", "Lexie Grey", "Dating", (5, 1), (6, 24)),
+        ("Alex Karev", "Lexie Grey", "Dating", (4, 6), (6, 24)),
         ("Alex Karev", "Lucy Fields", "Dating", (7, 17), (7, 22)),
         ("Alex Karev", "Callie Torres", "Fling", (6, 13), (6, 1)),
         ("Alex Karev", "Laurel Pinson", "Fling", (7, 12), (7, 1)),
@@ -323,7 +323,7 @@ def _romantic_edges() -> List[Tuple]:
         ("Amelia Shepherd", "Tom Koracick", "Fling", (14, 6), (14, 6)),
         ("Amelia Shepherd", "Kai Bartley", "Dating", (18, 8), (19, 1)),
         ("Amelia Shepherd", "Toni Wright", "Dating", (22, 11), (22, 18)),
-        ("Owen Hunt", "Beth Whitman", "Dating", (5, 1), (5, 15)),
+        ("Owen Hunt", "Beth Whitman", "Dating", (5, 15), (5, 15)),
         ("Owen Hunt", "Cristina Yang", "Married", (5, 6), (9, 10)),
         ("Owen Hunt", "Emma Marling", "Dating", (10, 4), (10, 14)),
         ("Owen Hunt", "Teddy Altman", "Married", (14, 17), None),
@@ -335,7 +335,7 @@ def _romantic_edges() -> List[Tuple]:
         ("Teddy Altman", "Cass Beckman", "Dating", (21, 6), None),
         ("Cristina Yang", "Colin Marlow", "Dating", (2, 1), (2, 1)),
         ("Cristina Yang", "Preston Burke", "Dating", (2, 3), (3, 25)),
-        ("Cristina Yang", "Shane Ross", "Fling", (10, 1), (10, 12)),
+        ("Cristina Yang", "Shane Ross", "Fling", (10, 10), (10, 12)),
         ("Cristina Yang", "Darren Parker", "Fling", (9, 3), (9, 1)),
 
         # --- April / Jackson / Maggie -----------------------------------------
@@ -346,11 +346,11 @@ def _romantic_edges() -> List[Tuple]:
         ("Jackson Avery", "Lexie Grey", "Dating", (7, 20), (8, 8)),
         ("Jackson Avery", "Mara Keaton", "Fling", (8, 17), (8, 1)),
         ("Jackson Avery", "Stephanie Edwards", "Dating", (9, 10), (10, 12)),
-        ("Jackson Avery", "Priya", "Dating", (14, 1), (14, 14)),
+        ("Jackson Avery", "Priya", "Dating", (14, 13), (14, 14)),
         ("Jackson Avery", "Jo Wilson", "Fling", (17, 4), (17, 15)),
         ("Jackson Avery", "Maggie Pierce", "Dating", (14, 14), (16, 1)),
         ("Jackson Avery", "Victoria Hughes", "Dating", (16, 3), (16, 17)),
-        ("Maggie Pierce", "Ethan Boyd", "Dating", (11, 1), (12, 3)),
+        ("Maggie Pierce", "Ethan Boyd", "Dating", (11, 15), (12, 3)),
         ("Maggie Pierce", "Dean", "Dating", (11, 10), (11, 1)),
         ("Maggie Pierce", "Andrew DeLuca", "Dating", (12, 3), (12, 16)),
         ("Maggie Pierce", "Clive Johnson", "Dating", (14, 9), (14, 14)),
@@ -359,7 +359,7 @@ def _romantic_edges() -> List[Tuple]:
 
         # --- Bailey / Webber / the older generation ---------------------------
         ("Miranda Bailey", "Tucker Jones", "Married", (1, 1), (6, 10)),
-        ("Miranda Bailey", "Eli Lloyd", "Dating", (7, 1), (8, 5)),
+        ("Miranda Bailey", "Eli Lloyd", "Dating", (7, 10), (8, 5)),
         ("Miranda Bailey", "Ben Warren", "Married", (6, 14), None),
         ("Richard Webber", "Adele Webber", "Married", (1, 1), (9, 10)),
         ("Richard Webber", "Ellis Grey", "Fling", (2, 15), (3, 17)),
@@ -458,18 +458,18 @@ def _pp_edges() -> List[Tuple]:
         # S1 is meeting only -- he asks her out in 1x07 and she declines, then
         # stands her up at 2x01. The tie starts when they actually sleep together.
         ("Addison Montgomery", "Kevin Nelson", "Dating", (2, 4), (2, 13)),
-        ("Addison Montgomery", "Pete Wilder", "Dating", (3, 1), (3, 23)),
+        ("Addison Montgomery", "Pete Wilder", "Dating", (3, 14), (3, 23)),
         ("Addison Montgomery", "Sam Bennett", "Dating", (4, 1), (5, 22)),
         ("Addison Montgomery", "Jake Reilly", "Married", (4, 22), None),
 
         # --- Violet / Pete ---------------------------------------------------
-        ("Violet Turner", "Pete Wilder", "Married", (2, 1), (6, 1)),
+        ("Violet Turner", "Pete Wilder", "Married", (2, 9), (6, 1)),
         ("Violet Turner", "Sheldon Wallace", "Dating", (2, 8), (2, 22)),
         ("Violet Turner", "The Captain Montgomery", "Fling", (3, 9), (3, 9)),
         ("Violet Turner", "Scott Becker", "Dating", (5, 11), (5, 17)),
         ("Violet Turner", "Allan", "Dating", (1, 5), (1, 5)),
-        ("Pete Wilder", "Meg Porter", "Dating", (1, 1), (2, 1)),
-        ("Pete Wilder", "Lisa King", "Dating", (2, 1), (2, 21)),
+        ("Pete Wilder", "Meg Porter", "Dating", (2, 5), (2, 10)),
+        ("Pete Wilder", "Lisa King", "Dating", (2, 20), (2, 21)),
 
         # --- Cooper / Charlotte ----------------------------------------------
         ("Cooper Freedman", "Charlotte King", "Married", (1, 8), None),
@@ -499,7 +499,7 @@ def _pp_edges() -> List[Tuple]:
         # Starts here and resolves on Grey's (10x22 engagement, 10x23 breakup).
         # The model carries stage dates in ONE show, so the PP end is the last
         # PP episode they are together in; the Grey's side is a reveal.
-        ("Amelia Shepherd", "James Peterson", "Dating", (6, 1), (6, 13)),
+        ("Amelia Shepherd", "James Peterson", "Dating", (6, 11), (6, 13)),
     ]
 
 
@@ -620,6 +620,10 @@ def _episode_is_known() -> List[dict]:
         {"Source": "Jules Millin", "Target": "Mika Yasuda"},
         # Making out in the shooting aftermath, 7x01.
         {"Source": "Teddy Altman", "Target": "Andrew Perkins"},
+        # Glasses falling off during sex, 14x01.
+        {"Source": "Jo Wilson", "Target": "Levi Schmitt"},
+        # The bath scene that starts the real relationship, PP 4x01.
+        {"Source": "Addison Montgomery", "Target": "Sam Bennett"},
     ]
 
 
