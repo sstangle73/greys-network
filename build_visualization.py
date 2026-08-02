@@ -1,0 +1,1177 @@
+"""
+Grey's Anatomy Network Visualizer
+=================================
+Reads nodes.csv + edges.csv and emits a single self-contained HTML file with a
+force-directed graph (D3 v7 from CDN, everything else inlined).
+
+The CSVs stay the source of truth -- edit them (or greys_network.py), re-run
+this, and the visualization updates. Image_URL values, once you fill them in,
+are rendered as circular node portraits automatically.
+
+Usage:
+    python build_visualization.py --indir . --out greys_network.html
+"""
+
+import argparse
+import json
+import os
+
+import pandas as pd
+
+D3_CDN = "https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"
+
+
+# --------------------------------------------------------------------------- #
+# Data prep
+# --------------------------------------------------------------------------- #
+
+def load_graph(indir: str) -> dict:
+    """Read the CSVs and shape them into the JSON payload the page expects."""
+    nodes = pd.read_csv(os.path.join(indir, "nodes.csv")).fillna("")
+    edges = pd.read_csv(os.path.join(indir, "edges.csv")).fillna("")
+    shows = pd.read_csv(os.path.join(indir, "shows.csv")).fillna("")
+
+    # Degree drives node size, so the network's gravitational centers are obvious.
+    degree = (
+        pd.concat([edges["Source"], edges["Target"]])
+        .value_counts()
+        .to_dict()
+    )
+
+    def as_int(value):
+        """Death_Season/Episode are blank for the living."""
+        return int(value) if str(value).strip() not in ("", "nan") else None
+
+    node_payload = [
+        {
+            "id": row.Character,
+            "status": row.Status,
+            "image": row.Image_URL,
+            "degree": int(degree.get(row.Character, 0)),
+            "dshow": row.Death_Show or "GA",
+            "ds": as_int(row.Death_Season),
+            "de": as_int(row.Death_Episode),
+        }
+        for row in nodes.itertuples()
+    ]
+
+    def unpack(field):
+        """'S19:3x05:Dating;GA:16x14:Married' -> [{show, s, e, stage}, ...]"""
+        out = []
+        for chunk in str(field).split(";"):
+            if not chunk.strip():
+                continue
+            show, code, stage = chunk.split(":")
+            season, _, episode = code.partition("x")
+            out.append({"show": show, "s": int(season), "e": int(episode),
+                        "stage": stage})
+        return out
+
+    link_payload = [
+        {
+            "source": row.Source,
+            "target": row.Target,
+            "type": row.Relationship_Type,
+            "show": row.Show,
+            "reveals": unpack(row.Reveals),
+            "s": int(row.First_Season),
+            "e": int(row.First_Episode),
+            "ls": as_int(row.Last_Season),
+            "le": as_int(row.Last_Episode),
+            "gs": as_int(row.Dating_Season),
+            "ge": as_int(row.Dating_Episode),
+            "ms": as_int(row.Married_Season),
+            "me": as_int(row.Married_Episode),
+            "split": row.Outcome == "Divorced",
+            "ss": as_int(row.Outcome_Season),
+            "se": as_int(row.Outcome_Episode),
+        }
+        for row in edges.itertuples()
+    ]
+
+    show_payload = [
+        {"key": row.Key, "title": row.Title, "seasons": int(row.Seasons),
+         "episodes": int(row.Episodes), "s": int(row.Start_Season),
+         "e": int(row.Start_Episode), "on": bool(int(row.Enabled))}
+        for row in shows.itertuples()
+    ]
+
+    return {"nodes": node_payload, "links": link_payload, "shows": show_payload}
+
+
+# --------------------------------------------------------------------------- #
+# Page template
+# --------------------------------------------------------------------------- #
+
+TEMPLATE = r"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Grey Sloan Relationship Chart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700&family=IBM+Plex+Mono:wght@400;500&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<script src="__D3_CDN__"></script>
+<style>
+  :root {
+    --ground:   #0B2B2E;
+    --panel:    #10393D;
+    --rule:     #1F5457;
+    --bone:     #E8EDE9;
+    --muted:    #7FA3A0;
+    /* Four hues roughly 90 degrees apart, chosen so the categories survive
+       red-green colour blindness and stay distinct in greyscale. Parent used
+       to be mint green, which paired with the red Fling into the single most
+       common confusion there is. Every type also carries a second cue -- a
+       dash pattern and a mid-edge glyph -- so colour is never load-bearing. */
+    --married:  #E8B84B;   /* gold    solid,  heart  */
+    --dating:   #4FC3D9;   /* cyan    solid,  ...    */
+    --fling:    #E0576E;   /* magenta dashed, 1      */
+    --parent:   #9B8CE0;   /* violet  dotted, no glyph */
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--ground);
+    color: var(--bone);
+    font-family: 'Source Sans 3', system-ui, sans-serif;
+    overflow: hidden;
+  }
+  #chart {
+    position: fixed; inset: 0;
+    width: 100%; height: 100%;   /* <svg> is a replaced element -- without an
+                                    explicit size it falls back to its intrinsic
+                                    300x150 and clips everything outside it */
+    display: block; touch-action: none;
+  }
+
+  /* --- masthead ---------------------------------------------------------- */
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 5;
+    padding: 18px 24px 14px;
+    background: linear-gradient(to bottom, rgba(11,43,46,.96), rgba(11,43,46,0));
+    pointer-events: none;
+  }
+  h1 {
+    margin: 0; font-family: 'Archivo', sans-serif; font-weight: 700;
+    font-size: 20px; letter-spacing: .22em; text-transform: uppercase;
+  }
+  .sub {
+    margin-top: 5px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px; color: var(--muted); letter-spacing: .06em;
+  }
+  .trace { display: block; margin-top: 10px; height: 14px; width: min(420px, 60vw); }
+
+  /* --- controls ---------------------------------------------------------- */
+  .rail {
+    position: fixed; left: 24px; bottom: 24px; z-index: 5;
+    width: 232px; padding: 16px;
+    background: rgba(16,57,61,.92); border: 1px solid var(--rule);
+    backdrop-filter: blur(6px);
+  }
+  .rail h2 {
+    margin: 0 0 10px; font-family: 'IBM Plex Mono', monospace; font-weight: 500;
+    font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted);
+  }
+  .rail-toggle {
+    display: none; width: 100%; padding: 9px;
+    background: none; border: 1px solid var(--rule); color: var(--bone);
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: .16em; text-transform: uppercase; cursor: pointer;
+  }
+  .rail.collapsed .rail-body { display: block; }
+  .btn-fit {
+    position: fixed; right: 24px; top: 92px; z-index: 5;
+    padding: 8px 12px; background: rgba(16,57,61,.92);
+    border: 1px solid var(--rule); color: var(--bone);
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: .14em; text-transform: uppercase; cursor: pointer;
+  }
+  .btn-fit:hover { border-color: var(--bone); }
+  .cutoff { margin-bottom: 16px; }
+  /* One block per show. A show that is toggled off keeps its sliders visible
+     but faded, so you can see where you left it without turning it back on. */
+  .show-block { margin-bottom: 12px; }
+  .show-block + .show-block {
+    border-top: 1px solid var(--rule); padding-top: 10px;
+  }
+  .show-block.off { opacity: .42; }
+  .show-block.off input[type=range] { pointer-events: none; }
+  .show-head {
+    display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px;
+    cursor: pointer;
+  }
+  .show-head input { accent-color: var(--dating); margin: 0; align-self: center; }
+  .show-title {
+    font-family: 'Source Sans 3', sans-serif; font-size: 12px; color: var(--muted);
+  }
+  .cutoff-read {
+    font-family: 'Archivo', sans-serif; font-weight: 700; font-size: 19px;
+    letter-spacing: .1em; margin-bottom: 8px;
+  }
+  .show-head .cutoff-read { margin: 0 0 0 auto; font-size: 15px; }
+  .slider-row {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 6px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
+  }
+  .slider-row span { width: 52px; flex: none; }
+  .slider-row input { flex: 1; accent-color: var(--fling); min-width: 0; }
+  .cutoff-note {
+    margin-top: 7px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px; line-height: 1.5; color: var(--fling);
+  }
+  #search {
+    width: 100%; margin-bottom: 14px; padding: 8px 10px;
+    background: var(--ground); border: 1px solid var(--rule); color: var(--bone);
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+  }
+  #search:focus { outline: 2px solid var(--dating); outline-offset: 1px; }
+  #search::placeholder { color: var(--muted); }
+  .key { display: flex; flex-direction: column; gap: 7px; }
+  .key label {
+    display: flex; align-items: center; gap: 9px; cursor: pointer;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
+    user-select: none;
+  }
+  .key input { accent-color: var(--dating); margin: 0; }
+  .key .swatch { width: 22px; height: 0; border-top-width: 2px; border-top-style: solid; }
+  .key .count { margin-left: auto; color: var(--muted); font-size: 11px; }
+  .glyphkey {
+    display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
+  }
+  .glyphkey span { display: flex; align-items: center; gap: 9px; }
+  .glyphkey svg { width: 18px; height: 18px; flex: none; }
+  .past-toggle {
+    display: flex; align-items: center; gap: 9px; margin-top: 10px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 12px; cursor: pointer;
+  }
+  .past-toggle input { accent-color: var(--dating); margin: 0; }
+  .statuses {
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule);
+    display: flex; flex-direction: column; gap: 6px;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
+  }
+  .statuses span { display: flex; align-items: center; gap: 9px; }
+  .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; }
+
+  /* --- detail panel ------------------------------------------------------ */
+  .detail {
+    position: fixed; top: 0; right: 0; bottom: 0; z-index: 6;
+    width: 320px; max-width: 84vw; padding: 26px 22px;
+    background: var(--panel); border-left: 1px solid var(--rule);
+    transform: translateX(100%); transition: transform .28s ease;
+    overflow-y: auto;
+  }
+  .detail.open { transform: none; }
+  .detail .close {
+    position: absolute; top: 16px; right: 16px;
+    background: none; border: none; color: var(--muted);
+    font-size: 22px; line-height: 1; cursor: pointer; padding: 4px;
+  }
+  .detail .close:hover { color: var(--bone); }
+  .detail h3 {
+    margin: 0 0 4px; font-family: 'Archivo', sans-serif; font-size: 21px;
+    font-weight: 700; letter-spacing: .02em; padding-right: 28px;
+  }
+  .detail .meta {
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    letter-spacing: .1em; text-transform: uppercase; color: var(--muted);
+    padding-bottom: 16px; border-bottom: 1px solid var(--rule);
+  }
+  .detail .group { margin-top: 18px; }
+  .detail .group h4 {
+    margin: 0 0 8px; font-family: 'IBM Plex Mono', monospace; font-weight: 500;
+    font-size: 10px; letter-spacing: .18em; text-transform: uppercase;
+  }
+  .detail ul { margin: 0; padding: 0; list-style: none; }
+  .detail li {
+    padding: 6px 0 6px 12px; font-size: 14px;
+    border-left: 2px solid var(--rule); cursor: pointer;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .detail li:hover { border-left-color: var(--bone); }
+  .detail li.over .who { color: #A9C4C1; }
+  .detail .when {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    color: var(--muted); letter-spacing: .04em;
+  }
+  .detail .portrait {
+    width: 100%; aspect-ratio: 1; object-fit: cover;
+    margin-bottom: 14px; border: 1px solid var(--rule); filter: grayscale(.25);
+  }
+
+  /* --- graph ------------------------------------------------------------- */
+  .node { cursor: pointer; }
+  .card { fill: #10393D; stroke: #2E6A6D; stroke-width: 1.5px; }
+  .node.gone .card { fill: #0E3033; stroke: #24565A; stroke-dasharray: 3 3; }
+  .card-label {
+    font-family: 'Archivo', sans-serif; font-weight: 500; font-size: 12px;
+    fill: var(--bone); pointer-events: none; letter-spacing: .02em;
+  }
+  .node.gone .card-label { fill: #8FAEAC; }
+  .pip { fill: #6E9A98; }
+  .node.gone .pip { fill: none; stroke: #55807E; stroke-width: 1.5px; }
+  .leaf-label {
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    fill: #B9CFCB; pointer-events: none;
+    paint-order: stroke; stroke: var(--ground); stroke-width: 3px;
+  }
+  .marker { pointer-events: none; }
+  .dimmed { opacity: .08; }
+  .hint {
+    position: fixed; bottom: 24px; right: 24px; z-index: 4;
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted);
+  }
+  @media (max-width: 720px) {
+    .rail { left: 12px; right: 12px; bottom: 12px; width: auto; padding: 12px; }
+    .rail-toggle { display: block; }
+    .rail.collapsed .rail-body { display: none; }
+    .rail.collapsed { padding: 12px; }
+    .rail-body { margin-top: 12px; }
+    .hint { display: none; }
+    h1 { font-size: 16px; letter-spacing: .16em; }
+    .btn-fit { top: auto; bottom: 12px; right: 12px; }
+    .rail.collapsed ~ .btn-fit { bottom: 64px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .detail { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<svg id="chart"></svg>
+
+<header>
+  <h1>Grey Sloan Memorial</h1>
+  <div class="sub">Relationship chart &middot; <span id="tally">__NODE_COUNT__ people, __LINK_COUNT__ connections</span></div>
+  <svg class="trace" viewBox="0 0 420 14" preserveAspectRatio="none" aria-hidden="true">
+    <path d="M0 7 H84 l6 -6 l7 12 l6 -9 l5 3 H186 l6 -6 l7 12 l6 -9 l5 3 H420"
+          fill="none" stroke="#1F5457" stroke-width="1.4"/>
+  </svg>
+</header>
+
+<div class="rail collapsed" id="rail">
+  <button class="rail-toggle" id="rail-toggle" aria-expanded="false">Search &amp; filters</button>
+  <div class="rail-body">
+    <h2>Watched through</h2>
+    <div class="cutoff" id="cutoffs"></div>
+    <div class="cutoff-note" id="cutoff-note"></div>
+    <h2>Spacing</h2>
+    <label class="slider-row">
+      <span id="spacing-read">1.0&times;</span>
+      <input type="range" id="spacing" min="6" max="22" value="10" />
+    </label>
+    <h2>Find a character</h2>
+    <input id="search" type="search" placeholder="e.g. Meredith" autocomplete="off"
+           list="cast" spellcheck="false" />
+    <datalist id="cast"></datalist>
+    <h2>Connection type</h2>
+    <div class="key" id="key"></div>
+    <label class="past-toggle">
+      <input type="checkbox" id="past" checked />
+      Include past relationships<span class="count" id="past-count"></span>
+    </label>
+    <h2>Markers</h2>
+    <div class="glyphkey">
+      <span><svg viewBox="-10 -10 20 20"><circle r="8" fill="none" stroke="#E8B84B" stroke-width="1.4"/><text y="3.2" text-anchor="middle" fill="#E8B84B" font-size="9">&#9829;</text></svg> Married</span>
+      <span><svg viewBox="-10 -10 20 20"><circle r="8" fill="none" stroke="#8A7F5E" stroke-width="1.4"/><text y="3.2" text-anchor="middle" fill="#8A7F5E" font-size="9">&#9829;</text><path d="M0,-6 L-1.8,-1.5 L1.8,0.8 L0,6" fill="none" stroke="#0B2B2E" stroke-width="1.7"/></svg> Divorced</span>
+      <span><svg viewBox="-10 -10 20 20"><circle r="8" fill="none" stroke="#4FC3D9" stroke-width="1.4"/><text y="2.8" text-anchor="middle" fill="#4FC3D9" font-size="7">&#8226;&#8226;&#8226;</text></svg> Relationship</span>
+      <span><svg viewBox="-10 -10 20 20"><circle r="8" fill="none" stroke="#E0576E" stroke-width="1.4"/><text y="3.2" text-anchor="middle" fill="#E0576E" font-size="9">1</text></svg> One-time</span>
+      <span><svg viewBox="-10 -10 20 20"><line x1="-9" y1="0" x2="9" y2="0" stroke="#9B8CE0" stroke-width="1.4" stroke-dasharray="2 3"/></svg> Blood relative</span>
+    </div>
+    <div class="statuses">
+      <span><i class="dot" style="background:#E8EDE9"></i> Alive</span>
+      <span><i class="dot" style="background:transparent;border:2px solid #7FA3A0"></i> Deceased</span>
+      <span><i class="dot" style="background:#4FC3D9;width:7px;height:7px"></i> Child</span>
+    </div>
+  </div>
+</div>
+
+<button class="btn-fit" id="fit">Fit to screen</button>
+
+<aside class="detail" id="detail" aria-live="polite">
+  <button class="close" id="close" aria-label="Close panel">&times;</button>
+  <div id="detail-body"></div>
+</aside>
+
+<div class="hint">Drag to rearrange &middot; scroll to zoom &middot; click a node</div>
+
+<script>
+const DATA = __GRAPH_DATA__;
+
+const TYPES = {
+  Married: { color: '#E8B84B', dash: null },
+  Dating:  { color: '#4FC3D9', dash: null },
+  Fling:   { color: '#E0576E', dash: '5 4' },
+  Parent:  { color: '#9B8CE0', dash: '1 4' }
+};
+
+// Blood relations recede into the background, so they are drawn in a darker
+// tone of the same violet rather than a different hue. Keeping this in step
+// with TYPES.Parent.color matters: the legend swatch reads TYPES, so when this
+// was a teal constant the key showed one colour and the chart drew another.
+const PARENT_INK = '#6B5FA8';
+
+const active = new Set(Object.keys(TYPES));
+let showPast = true;
+
+/* ---- legend ------------------------------------------------------------- */
+d3.select('#key').selectAll('label')
+  .data(Object.keys(TYPES))
+  .join('label')
+  .html(t => `
+    <input type="checkbox" checked data-type="${t}" />
+    <i class="swatch" style="border-top-color:${TYPES[t].color};
+       border-top-style:${TYPES[t].dash ? 'dashed' : 'solid'}"></i>
+    ${t}<span class="count" data-count="${t}">0</span>`);
+
+/* ---- svg scaffolding ---------------------------------------------------- */
+const svg = d3.select('#chart');
+const root = svg.append('g');
+let width = window.innerWidth, height = window.innerHeight;
+const isPhone = () => window.innerWidth <= 720;
+
+function sizeSvg() {
+  width = window.innerWidth;
+  height = window.innerHeight;
+  svg.attr('width', width).attr('height', height);
+}
+sizeSvg();
+
+const zoom = d3.zoom()
+  .scaleExtent([0.15, 4])
+  // Declare the extent rather than letting d3 infer it from the SVG's
+  // width/height attributes -- that inference is what silently sized the
+  // interaction area to 300x150.
+  .extent(() => [[0, 0], [width, height]])
+  .on('zoom', e => {
+  root.attr('transform', e.transform);
+  curK = e.transform.k;
+  updateLabels();
+});
+svg.call(zoom);
+
+const defs = svg.append('defs');
+// Circular portraits, used only for nodes that have an Image_URL filled in.
+DATA.nodes.filter(n => n.image).forEach((n, i) => {
+  n.patternId = 'p' + i;
+  defs.append('pattern')
+    .attr('id', n.patternId).attr('width', 1).attr('height', 1)
+    .attr('patternContentUnits', 'objectBoundingBox')
+    .append('image')
+    .attr('width', 1).attr('height', 1)
+    .attr('preserveAspectRatio', 'xMidYMid slice')
+    .attr('href', n.image);
+});
+
+const radius = n => n.status === 'Child' ? 5 : 6 + Math.sqrt(n.degree) * 2.6;
+
+/* ---- spoiler cutoff ----------------------------------------------------- */
+// Everything on screen is gated on this. A relationship or a death that hasn't
+// aired yet, relative to where the viewer is, simply doesn't exist.
+const cuts = {}, enabled = new Set();
+DATA.shows.forEach(sh => {
+  cuts[sh.key] = { s: sh.s, e: sh.e };
+  if (sh.on) enabled.add(sh.key);
+});
+const SHOW_BY_KEY = Object.fromEntries(DATA.shows.map(sh => [sh.key, sh]));
+// Declared here, not down with the detail panel: applyCutoff() reads it during
+// boot, and a `let` accessed before its declaration is a temporal dead zone
+// error rather than an undefined.
+let selected = null;
+let searchCore = null;   // people whose name matched
+let searchSet = null;    // those people plus everyone they connect to
+// Hoisted: clearSelection() calls applySearch(), and applyCutoff() can call
+// clearSelection() during boot -- a `const` further down would be a dead zone.
+const searchInput = document.getElementById('search');
+// Every date belongs to exactly one show, so every comparison needs to know
+// which clock it is reading. seen() is the only place that knows.
+function seen(show, s, e) {
+  const c = cuts[show];
+  if (!c || !enabled.has(show)) return false;
+  return s < c.s || (s === c.s && e <= c.e);
+}
+// A tie is on screen once its home show has reached it, OR once some other
+// show you are watching has revealed it. That is what keeps a Grey's-only
+// viewer seeing exactly what Grey's told them.
+const atHome = l => seen(l.show, l.s, l.e);
+const revealed = l => l.reveals.filter(r => seen(r.show, r.s, r.e));
+const aired = l => atHome(l) || revealed(l).length > 0;
+// A marriage reads as intact until the split actually airs -- at S22 E02 Owen
+// and Teddy are still married, and the chart should say so.
+// A couple who marry later are DATING until the wedding airs. Relationship_Type
+// is where the tie ended up, not what it was on day one.
+const wed = l => l.type === 'Married' && l.ms !== null && seen(l.show, l.ms, l.me);
+// Some ties start as a hookup and only become a relationship later. A blank
+// gs means it was a relationship from the first scene.
+const steady = l => l.gs === null || seen(l.show, l.gs, l.ge);
+
+// The stage the home show has reached.
+function homeStage(l) {
+  if (l.type === 'Parent' || l.type === 'Fling') return l.type;
+  if (wed(l)) return 'Married';
+  return steady(l) ? 'Dating' : 'Fling';
+}
+// Where two shows disagree, the further-along one wins: if Station 19 has shown
+// you a wedding, the tie is married even if Grey's has only mentioned them
+// dating. Rank makes "further along" well-defined.
+const RANK = { Fling: 0, Dating: 1, Married: 2 };
+function displayType(l) {
+  if (l.type === 'Parent') return 'Parent';
+  let best = atHome(l) ? homeStage(l) : null;
+  for (const r of revealed(l)) {
+    if (best === null || (RANK[r.stage] ?? 0) > (RANK[best] ?? 0)) best = r.stage;
+  }
+  return best || homeStage(l);
+}
+const divorced = l => l.split && wed(l) && seen(l.show, l.ss, l.se);
+// Over, as of where the viewer is. A relationship that ends in a later season
+// is still going from their point of view.
+const over = l => l.ls !== null && seen(l.show, l.ls, l.le);
+
+// Episode precision only shows on a show's final season, which is where the
+// viewer is likely to be mid-run. Spinoffs carry their key so "S19 S3" cannot
+// be mistaken for a Grey's season.
+function seasonTag(show, s, e) {
+  const meta = SHOW_BY_KEY[show];
+  const label = s === (meta ? meta.seasons : 22)
+    ? `S${s} E${String(e).padStart(2, '0')}` : `S${s}`;
+  return show && show !== 'GA' ? `${show} ${label}` : label;
+}
+function span(l) {
+  const from = seasonTag(l.show, l.s, l.e);
+  if (!over(l)) return `${from} \u2013 present`;
+  const to = seasonTag(l.show, l.ls, l.le);
+  return from === to ? from : `${from} \u2013 ${to}`;
+}
+const isDead = n => n.ds !== null && seen(n.dshow, n.ds, n.de);
+const statusAt = n => n.status === 'Child' ? 'Child' : (isDead(n) ? 'Deceased' : 'Alive');
+
+const fill = n => {
+  if (n.patternId) return `url(#${n.patternId})`;
+  if (isDead(n)) return 'transparent';
+  if (n.status === 'Child') return '#4FC3D9';
+  return '#E8EDE9';
+};
+
+// Base geometry, all multiplied by the user's spacing setting.
+const BASE_LINK = 118, BASE_PARENT_LINK = 66, BASE_CHARGE = -460, BASE_COLLIDE = 24;
+let spacing = 1;
+
+const sim = d3.forceSimulation(DATA.nodes)
+  .force('link', d3.forceLink(DATA.links).id(d => d.id).strength(.4))
+  .force('charge', d3.forceManyBody())
+  .force('collide', d3.forceCollide())
+  // forceCenter only fixes the mean position -- it lets outliers drift off-screen.
+  // Mild positional forces keep the whole network inside a bounded area instead.
+  // They weaken as spacing rises, or they'd just claw the layout back together.
+  .force('x', d3.forceX(0))
+  .force('y', d3.forceY(0));
+
+function applySpacing() {
+  // Someone with a single connection is a satellite: pull them in tight so they
+  // read as belonging to that person instead of floating in the soup.
+  const satellite = l => Math.min(l.source.degree, l.target.degree) <= 1;
+  sim.force('link')
+    .distance(l => satellite(l)
+      ? 74 * spacing
+      : (l.type === 'Parent' ? BASE_PARENT_LINK : BASE_LINK) * spacing)
+    .strength(l => satellite(l) ? .9 : .35);
+  sim.force('charge')
+    .strength(d => (d.degree <= 1 ? BASE_CHARGE * .35 : BASE_CHARGE) * spacing)
+    .distanceMax(760 * spacing);
+  // Cards are wide, so collide on half the card width, not a notional radius.
+  sim.force('collide').radius(d => d.w / 2 + 9 * spacing).strength(.9);
+  sim.force('x').x(0).strength(.05 / spacing);
+  sim.force('y').y(0).strength(.07 / spacing);
+}
+applySpacing();
+
+// Re-settle the layout off-screen, then reframe. Cheap enough at this size to
+// run synchronously rather than animating through an unreadable intermediate.
+function relayout() {
+  applySpacing();
+  DATA.nodes.forEach(n => { n.fx = n.fy = null; });
+  sim.alpha(1).stop();
+  for (let i = 0; i < 340; i++) sim.tick();
+  freezeLayout();
+  renderPositions();
+  applyCutoff();
+}
+
+/* ---- geometry ----------------------------------------------------------- */
+// Two tiers, as in a hand-drawn relationship poster: the people the show is
+// about get a card with their name (and portrait, once Image_URL is filled in);
+// everyone else is a bare name tethered to whoever they were involved with.
+const HUB_AT = 3;
+const isHub = d => d.degree >= HUB_AT;
+
+DATA.nodes.forEach(d => {
+  const label = (d.ds !== null ? '\u2020 ' : '') + d.id;
+  d.label = label;
+  d.h = isHub(d) ? 26 : 15;
+  d.w = isHub(d)
+    ? label.length * 6.6 + 22 + (d.image ? 22 : 0)
+    : label.length * 5.6 + 8;
+});
+
+// Curved connectors. A quadratic bow means two people with several kinds of
+// history don't overlap into one ambiguous straight line, and it reads far
+// calmer than a field of crossing straight segments.
+const BOW = 0.13;
+function ctrlPoint(d) {
+  const x1 = d.source.x, y1 = d.source.y, x2 = d.target.x, y2 = d.target.y;
+  return [(x1 + x2) / 2 - (y2 - y1) * BOW, (y1 + y2) / 2 + (x2 - x1) * BOW];
+}
+function linkPath(d) {
+  const [cx, cy] = ctrlPoint(d);
+  return `M${d.source.x},${d.source.y}Q${cx},${cy} ${d.target.x},${d.target.y}`;
+}
+// Exact midpoint of a quadratic Bezier: B(.5) = .25*P0 + .5*C + .25*P2
+function linkMid(d) {
+  const [cx, cy] = ctrlPoint(d);
+  return [0.25 * d.source.x + 0.5 * cx + 0.25 * d.target.x,
+          0.25 * d.source.y + 0.5 * cy + 0.25 * d.target.y];
+}
+
+const link = root.append('g').selectAll('path')
+  .data(DATA.links).join('path')
+  .attr('class', 'link')
+  .attr('fill', 'none')
+  .attr('stroke', d => d.type === 'Parent' ? PARENT_INK : TYPES[d.type].color)
+  .attr('stroke-width', d => d.type === 'Married' ? 2 : 1.2)
+  .attr('stroke-opacity', d => d.type === 'Parent' ? .5 : .45)
+  .attr('stroke-dasharray', d => d.type === 'Parent' ? '2 4' : null);
+
+/* ---- connection markers -------------------------------------------------- */
+// A badge riding each connection says what kind it was, so the line colour
+// isn't carrying the whole meaning. Blood relations get no badge -- the dotted
+// line already says it, and 39 extra badges is just noise.
+const GLYPH = { Married: '\u2665', Dating: '\u2022\u2022\u2022', Fling: '1' };
+
+const marker = root.append('g').selectAll('g')
+  .data(DATA.links.filter(l => l.type !== 'Parent')).join('g')
+  .attr('class', 'marker');
+
+marker.append('circle')
+  .attr('r', 8)
+  .attr('fill', '#0B2B2E')
+  .attr('stroke', d => TYPES[d.type].color)
+  .attr('stroke-width', 1.4);
+
+marker.append('text')
+  .attr('text-anchor', 'middle').attr('dy', '.35em')
+  .attr('fill', d => TYPES[d.type].color)
+  .style('font-family', "'IBM Plex Mono', monospace")
+  .style('font-size', d => d.type === 'Dating' ? '7px' : '9px')
+  .style('pointer-events', 'none')
+  .text(d => GLYPH[d.type]);
+
+// A divorce is the same heart with a split torn through it -- drawn in the
+// background colour so it reads as the heart breaking, not as an added mark.
+marker.filter(d => d.split)
+  .append('path')
+  .attr('class', 'crack')
+  .attr('d', 'M0,-6 L-1.8,-1.5 L1.8,0.8 L0,6')
+  .attr('fill', 'none')
+  .attr('stroke', '#0B2B2E')
+  .attr('stroke-width', 1.7)
+  .style('display', 'none');
+
+marker.append('title').text(d => `${d.source.id} \u2014 ${d.target.id}: ${d.type}`);
+
+const node = root.append('g').selectAll('g')
+  .data(DATA.nodes).join('g')
+  .attr('class', 'node')
+  .call(d3.drag()
+    // Ignore multi-touch so a pinch that happens to start on a node goes to the
+    // zoom behaviour instead of being swallowed as a drag.
+    .filter(e => !e.button && (!e.touches || e.touches.length === 1))
+    .on('start', (e, d) => { d.dragFrom = [e.x, e.y]; d.dragging = false; })
+    .on('drag', (e, d) => {
+      // A finger never lands perfectly still; require real travel before moving
+      // anything, so a tap-to-select doesn't nudge the node.
+      if (!d.dragging) {
+        const [x0, y0] = d.dragFrom;
+        if (Math.hypot(e.x - x0, e.y - y0) < 8 / curK) return;
+        d.dragging = true;
+      }
+      d.fx = d.x = e.x;
+      d.fy = d.y = e.y;
+      renderPositions();
+    })
+    // Position is kept, not released -- the node stays where you put it and
+    // nothing else on the chart moves.
+    .on('end', (e, d) => { d.dragFrom = null; }));
+
+const hub = node.filter(isHub);
+hub.append('rect')
+  .attr('class', 'card')
+  .attr('x', d => -d.w / 2).attr('y', d => -d.h / 2)
+  .attr('width', d => d.w).attr('height', d => d.h)
+  .attr('rx', d => d.h / 2);
+hub.filter(d => d.image)
+  .append('circle')
+  .attr('class', 'portrait-dot')
+  .attr('cx', d => -d.w / 2 + d.h / 2).attr('cy', 0).attr('r', d => d.h / 2 - 3)
+  .attr('fill', d => `url(#${d.patternId})`);
+hub.append('text')
+  .attr('class', 'card-label')
+  .attr('x', d => d.image ? -d.w / 2 + d.h + 4 : 0)
+  .attr('text-anchor', d => d.image ? 'start' : 'middle')
+  .attr('dy', '.34em')
+  .text(d => d.label);
+
+const leaf = node.filter(d => !isHub(d));
+leaf.append('circle').attr('class', 'pip').attr('r', 3);
+leaf.append('text')
+  .attr('class', 'leaf-label')
+  .attr('x', 7).attr('dy', '.34em')
+  .text(d => d.label);
+
+node.append('title').text(d => d.id);
+
+node.on('click', (e, d) => {
+      e.stopPropagation();
+      if (d.dragging) { d.dragging = false; return; }
+      select(d);
+    })
+    .on('mouseenter', (e, d) => { d.hover = true; updateLabels(); })
+    .on('mouseleave', (e, d) => { d.hover = false; updateLabels(); });
+svg.on('click', () => clearSelection());
+
+const nodeById = {};
+DATA.nodes.forEach(n => nodeById[n.id] = n);
+
+function renderPositions() {
+  link.attr('d', linkPath);
+  // The scale term has to be here too -- renderPositions runs on every tick and
+  // would otherwise strip the counter-scale that keeps markers a fixed size.
+  marker.attr('transform', d => {
+    const [x, y] = linkMid(d);
+    return `translate(${x},${y}) scale(${1 / curK})`;
+  });
+  node.attr('transform', d => `translate(${d.x},${d.y})`);
+}
+
+// Once settled, pin everything. A live simulation meant that brushing a node
+// re-energised the whole layout and the chart appeared to recenter itself.
+function freezeLayout() {
+  DATA.nodes.forEach(n => { n.fx = n.x; n.fy = n.y; });
+  sim.stop();
+}
+sim.on('tick', renderPositions);
+
+/* ---- labels ------------------------------------------------------------- */
+// Labels live in graph space, so they must be counter-scaled to hold a constant
+// on-screen size. How MANY are shown is a density decision: zoomed out, only the
+// hubs are legible; zoomed in, there's room for everyone. Hovering or selecting
+// always wins, so any character can be identified at any zoom.
+let curK = 1;
+
+// Legibility depends on how far apart nodes are ON SCREEN, not on the zoom
+// number. Keying off k alone meant that spreading the graph out -- which frees
+// up room for text -- perversely hid labels, because fitting a wider layout
+// lowers k. Measure the actual pixel gap instead.
+function minDegreeForLabel(k) {
+  const gap = BASE_LINK * spacing * k;
+  if (gap < 46) return 8;
+  if (gap < 78) return 5;
+  if (gap < 120) return 3;
+  if (gap < 190) return 2;
+  return 0;
+}
+
+function updateLabels() {
+  const k = curK;
+  const min = minDegreeForLabel(k);
+  // Pin names for a selected character's circle, and for everyone a search
+  // turned up -- that's the whole point of searching for them.
+  let keep = null;
+  if (selected) keep = new Set([selected, ...neighborsOf(selected).map(r => r.other)]);
+  if (searchSet) keep = keep ? new Set([...keep, ...searchSet]) : new Set(searchSet);
+
+  // Cards carry their own name and never counter-scale -- they're the anchors.
+  node.select('.leaf-label')
+    .style('font-size', (10 / k) + 'px')
+    .style('stroke-width', (3 / k) + 'px')
+    .attr('x', 7 / k)
+    .style('display', d =>
+      (d.hover || d.degree >= min || (keep && keep.has(d.id))) ? null : 'none');
+
+  // Markers are fixed-size furniture; hide them when they'd just be specks.
+  marker.attr('transform', function (d) {
+    const [x, y] = linkMid(d);
+    return `translate(${x},${y}) scale(${1 / k})`;
+  })
+  .style('opacity', d => over(d) ? .55 : 1)
+  .style('display', d =>
+      (k >= 0.45 && aired(d) && active.has(displayType(d))
+       && (showPast || !over(d))
+       && visible.has(d.source.id) && visible.has(d.target.id)) ? null : 'none');
+}
+
+/* ---- applying the cutoff ------------------------------------------------ */
+// A node is on screen if at least one of its relationships has aired. That
+// keeps characters from appearing before their storyline does -- the Lincoln
+// twins don't exist at S22 E02, so they aren't drawn at all.
+let visible = new Set();
+
+function applyCutoff(refit = true) {
+  const onChart = l => aired(l) && active.has(displayType(l))
+    && (showPast || l.type === 'Parent' || !over(l));
+
+  // Derived from onChart, not from aired() alone, so the cast matches the
+  // connections. Unticking "Blood relative" used to leave the children on the
+  // chart as dots with nothing attached to them, because the links went away
+  // and the people did not.
+  visible = new Set();
+  DATA.links.filter(onChart).forEach(l => {
+    visible.add(l.source.id);
+    visible.add(l.target.id);
+  });
+
+  link.style('display', l =>
+    (onChart(l) && visible.has(l.source.id) && visible.has(l.target.id)) ? null : 'none');
+
+  // Ended ties recede; the ones still standing keep full weight. This is what
+  // separates "these two have history" from "these two are together now".
+  link
+    .attr('stroke', l => l.type === 'Parent' ? PARENT_INK
+      : (divorced(l) ? '#8A7F5E' : TYPES[displayType(l)].color))
+    .attr('stroke-opacity', l => l.type === 'Parent' ? .5 : (over(l) ? .3 : .85))
+    .attr('stroke-width', l => (wed(l) ? 2 : 1.2) * (over(l) ? 1 : 1.6));
+  node.style('display', n => visible.has(n.id) ? null : 'none');
+  node.classed('gone', isDead);
+
+  // Marriages that have since ended show a broken heart, and go grey -- the
+  // gold is reserved for the ones still standing at this point in the show.
+  marker.select('.crack').style('display', d => divorced(d) ? null : 'none');
+  marker.select('circle')
+    .attr('stroke', d => divorced(d) ? '#8A7F5E' : TYPES[displayType(d)].color);
+  marker.select('text')
+    .attr('fill', d => divorced(d) ? '#8A7F5E' : TYPES[displayType(d)].color)
+    .style('font-size', d => displayType(d) === 'Dating' ? '7px' : '9px')
+    .text(d => GLYPH[displayType(d)]);
+  marker.select('title').text(d => {
+    const state = divorced(d) ? 'Married, later divorced'
+      : (d.type === 'Married' && !wed(d) ? 'Dating (marry later)' : displayType(d));
+    return `${d.source.id} \u2014 ${d.target.id}\n${state} \u00b7 ${span(d)}`;
+  });
+
+  const past = DATA.links.filter(l => aired(l) && l.type !== 'Parent' && over(l)).length;
+  d3.select('#past-count').text(past);
+  link.filter(d => d.type === 'Married')
+    .attr('stroke', d => divorced(d) ? '#8A7F5E' : TYPES.Married.color);
+
+  // A dagger prefix marks the dead, matching how a printed chart would do it.
+  node.select('.card-label').text(d => (isDead(d) ? '\u2020 ' : '') + d.id);
+  node.select('.leaf-label').text(d => (isDead(d) ? '\u2020 ' : '') + d.id);
+  node.select('title').text(d => `${d.id} - ${statusAt(d)}`);
+
+  const counts = {};
+  DATA.links.filter(aired).forEach(l => {
+    const t = displayType(l);
+    counts[t] = (counts[t] || 0) + 1;
+  });
+  d3.selectAll('[data-count]').text(function () { return counts[this.dataset.count] || 0; });
+
+  // The tally has to describe what is actually on screen, so it counts the
+  // links that survive the type filters and the past toggle -- not just the
+  // ones that have aired. Counting aired() here meant unticking Fling dropped
+  // the people count but left "connections" unchanged.
+  const drawn = DATA.links.filter(
+    l => onChart(l) && visible.has(l.source.id) && visible.has(l.target.id)).length;
+  DATA.shows.forEach(sh => {
+    const sfx = sh.key === 'GA' ? '' : '-' + sh.key;
+    const c = cuts[sh.key];
+    d3.select('#cutoff-read' + sfx)
+      .text(enabled.has(sh.key) ? `S${c.s} E${String(c.e).padStart(2, '0')}` : 'hidden');
+  });
+  d3.select('#tally').text(`${visible.size} people, ${drawn} connections`);
+
+  // The note below is about the CUTOFF specifically -- "later" means "hasn't
+  // aired yet", so it stays keyed to aired() and ignores the filters.
+  const hidden = DATA.links.filter(l => !aired(l)).length;
+  d3.select('#cutoff-note').text(hidden ? `${hidden} later connection${hidden === 1 ? '' : 's'} hidden` : '');
+
+  // Anyone selected who no longer exists at this cutoff gets deselected.
+  if (selected && !visible.has(selected)) clearSelection();
+  else if (selected) select(DATA.nodes.find(n => n.id === selected));
+
+  refreshCastList();
+  updateLabels();
+  if (refit) fitToView(400, initialFloor());
+}
+
+/* ---- camera ------------------------------------------------------------- */
+// The area actually free of chrome: the masthead sits on top, the rail bottom
+// left, the fit button bottom right. Fitting to innerWidth/innerHeight alone
+// pushes nodes underneath those panels.
+function viewport() {
+  const top = document.querySelector('header').offsetHeight + 8;
+  const rail = document.getElementById('rail');
+  if (isPhone()) {
+    const bottom = rail.offsetHeight + 64;
+    return { x: 12, y: top, w: window.innerWidth - 24, h: window.innerHeight - top - bottom };
+  }
+  const left = rail.offsetWidth + 48;
+  return { x: left, y: top, w: window.innerWidth - left - 40, h: window.innerHeight - top - 40 };
+}
+
+function fitToView(duration = 400, floor = 0) {
+  const shown = visible.size ? DATA.nodes.filter(n => visible.has(n.id)) : DATA.nodes;
+  const xs = shown.map(n => n.x), ys = shown.map(n => n.y);
+  if (!xs.length || !isFinite(xs[0])) return;
+  const minX = Math.min(...xs), maxX = Math.max(...xs);
+  const minY = Math.min(...ys), maxY = Math.max(...ys);
+  const pad = 46;
+  const vw = viewport();
+  if (vw.h < 120) return;
+  let k = Math.min(vw.w / (maxX - minX + pad * 2), vw.h / (maxY - minY + pad * 2), 1.6);
+  k = Math.max(k, floor);
+  const t = d3.zoomIdentity
+    .translate(vw.x + vw.w / 2 - k * (minX + maxX) / 2, vw.y + vw.h / 2 - k * (minY + maxY) / 2)
+    .scale(k);
+  svg.transition().duration(duration).call(zoom.transform, t);
+}
+
+// Settle the layout off-screen first, then frame it, so the graph is never
+// rendered mid-explosion or half outside the canvas.
+sim.stop();
+for (let i = 0; i < 320; i++) sim.tick();
+freezeLayout();
+// Positions are only written by renderPositions, which used to be driven by the
+// simulation's tick. Now that the layout freezes instead of running, boot has to
+// paint once itself -- otherwise every node sits at the origin with no transform.
+renderPositions();
+applyCutoff(false);
+const initialFloor = () => isPhone() ? 0.62 : 0;
+fitToView(0, initialFloor());
+
+
+document.getElementById('fit').onclick = () => fitToView();
+
+/* ---- filtering ---------------------------------------------------------- */
+d3.select('#key').selectAll('input').on('change', function () {
+  this.checked ? active.add(this.dataset.type) : active.delete(this.dataset.type);
+  link.style('display', l => (aired(l) && active.has(l.type)) ? null : 'none');
+});
+
+document.getElementById('past').addEventListener('change', function () {
+  showPast = this.checked;
+  applyCutoff();
+});
+
+/* ---- cutoff sliders, one block per show ---------------------------------- */
+// Grey's keeps the bare ids "season"/"episode" so it stays the primary control
+// (and so the existing test harness keeps driving it); spinoffs are suffixed.
+const cutoffBox = d3.select('#cutoffs');
+DATA.shows.forEach(sh => {
+  const sfx = sh.key === 'GA' ? '' : '-' + sh.key;
+  const block = cutoffBox.append('div').attr('class', 'show-block');
+  block.append('label').attr('class', 'show-head').html(`
+    <input type="checkbox" id="on${sfx}" data-show="${sh.key}" ${sh.on ? 'checked' : ''} />
+    <span class="show-title">${sh.title}</span>
+    <span class="cutoff-read" id="cutoff-read${sfx}"></span>`);
+  block.append('label').attr('class', 'slider-row').html(
+    `<span>Season</span><input type="range" id="season${sfx}"
+       min="1" max="${sh.seasons}" value="${sh.s}" />`);
+  block.append('label').attr('class', 'slider-row').html(
+    `<span>Episode</span><input type="range" id="episode${sfx}"
+       min="1" max="${sh.episodes}" value="${sh.e}" />`);
+
+  const season = document.getElementById('season' + sfx);
+  const episode = document.getElementById('episode' + sfx);
+  const toggle = document.getElementById('on' + sfx);
+  const read = () => {
+    cuts[sh.key] = { s: +season.value, e: +episode.value };
+    applyCutoff();
+  };
+  season.addEventListener('input', read);
+  episode.addEventListener('input', read);
+  toggle.addEventListener('change', () => {
+    toggle.checked ? enabled.add(sh.key) : enabled.delete(sh.key);
+    block.classed('off', !toggle.checked);
+    applyCutoff();
+  });
+  block.classed('off', !sh.on);
+});
+
+/* ---- spacing ------------------------------------------------------------- */
+const spacingInput = document.getElementById('spacing');
+spacingInput.addEventListener('input', () => {
+  d3.select('#spacing-read').text((spacingInput.value / 10).toFixed(1) + '\u00d7');
+});
+// Recompute on release: a full re-settle per pixel of slider travel is wasteful.
+spacingInput.addEventListener('change', () => {
+  spacing = spacingInput.value / 10;
+  relayout();
+});
+
+/* ---- selection + detail panel ------------------------------------------- */
+const detail = document.getElementById('detail');
+const body = document.getElementById('detail-body');
+document.getElementById('close').onclick = clearSelection;
+
+function neighborsOf(name) {
+  // Only aired relationships -- the panel must not leak what the graph hides.
+  return DATA.links
+    .filter(l => aired(l) && (l.source.id === name || l.target.id === name))
+    .map(l => ({
+      other: l.source.id === name ? l.target.id : l.source.id,
+      type: displayType(l),
+      when: l.type === 'Parent' ? seasonTag(l.s, l.e) : span(l),
+      over: l.type !== 'Parent' && over(l),
+      split: divorced(l),
+      sort: l.s * 100 + l.e
+    }));
+}
+
+function select(d) {
+  if (!d) return;
+  selected = d.id;
+  const rel = neighborsOf(d.id);
+  const keep = new Set([d.id, ...rel.map(r => r.other)]);
+
+  node.classed('dimmed', n => !keep.has(n.id));
+  const touches = l => l.source.id === d.id || l.target.id === d.id;
+  link.classed('dimmed', l => !touches(l));
+  marker.classed('dimmed', l => !touches(l));
+
+  const status = statusAt(d);
+  const current = rel.filter(r => r.type !== 'Parent' && !r.over).length;
+
+  const grouped = {};
+  rel.forEach(r => (grouped[r.type] ||= []).push(r));
+  Object.values(grouped).forEach(list => list.sort((a, b) => a.sort - b.sort));
+
+  body.innerHTML =
+    (d.image ? `<img class="portrait" src="${d.image}" alt="${d.id}">` : '') +
+    `<h3>${d.id}</h3>
+     <div class="meta">${status} &middot; ${rel.length} connection${rel.length === 1 ? '' : 's'}${
+        current ? ` &middot; ${current} current` : ''}</div>` +
+    Object.keys(TYPES).filter(t => grouped[t]).map(t => `
+      <div class="group">
+        <h4 style="color:${TYPES[t].color}">${t}</h4>
+        <ul>${grouped[t].map(r => `
+          <li data-jump="${r.other}" class="${r.over ? 'over' : ''}">
+            <span class="who">${r.other}</span>
+            <span class="when">${r.when}${r.split ? ' \u00b7 divorced' : ''}</span>
+          </li>`).join('')}</ul>
+      </div>`).join('');
+
+  updateLabels();
+
+  body.querySelectorAll('[data-jump]').forEach(li => {
+    li.onclick = () => {
+      const target = DATA.nodes.find(n => n.id === li.dataset.jump);
+      if (target) select(target);
+    };
+  });
+  detail.classList.add('open');
+}
+
+function clearSelection() {
+  selected = null;
+  detail.classList.remove('open');
+  // Falling back to the search state, not to "everything visible" -- clearing a
+  // selection shouldn't silently undo an active search.
+  applySearch();
+}
+
+/* ---- search ------------------------------------------------------------- */
+// Matching someone surfaces their whole neighbourhood: their own name, the names
+// of everyone they were involved with, and only the connections that touch them.
+function applySearch() {
+  const q = searchInput.value.trim().toLowerCase();
+
+  if (!q) {
+    searchCore = searchSet = null;
+    node.classed('dimmed', false);
+    link.classed('dimmed', false);
+    marker.classed('dimmed', false);
+    updateLabels();
+    return;
+  }
+
+  searchCore = new Set(DATA.nodes
+    .filter(n => visible.has(n.id) && n.id.toLowerCase().includes(q))
+    .map(n => n.id));
+
+  searchSet = new Set(searchCore);
+  DATA.links.filter(aired).forEach(l => {
+    if (searchCore.has(l.source.id)) searchSet.add(l.target.id);
+    if (searchCore.has(l.target.id)) searchSet.add(l.source.id);
+  });
+
+  const touches = l => searchCore.has(l.source.id) || searchCore.has(l.target.id);
+  node.classed('dimmed', n => !searchSet.has(n.id));
+  link.classed('dimmed', l => !touches(l));
+  marker.classed('dimmed', l => !touches(l));
+  updateLabels();
+}
+
+searchInput.addEventListener('input', applySearch);
+searchInput.addEventListener('search', applySearch);
+
+// Native autocomplete, refreshed whenever the cast on screen changes.
+function refreshCastList() {
+  const names = DATA.nodes
+    .filter(n => visible.has(n.id))
+    .map(n => n.id).sort();
+  d3.select('#cast').selectAll('option').data(names)
+    .join('option').attr('value', d => d);
+}
+
+/* ---- rail toggle -------------------------------------------------------- */
+const rail = document.getElementById('rail');
+const railToggle = document.getElementById('rail-toggle');
+railToggle.onclick = () => {
+  const open = rail.classList.toggle('collapsed') === false;
+  railToggle.setAttribute('aria-expanded', String(open));
+  fitToView();
+};
+
+/* ---- resize ------------------------------------------------------------- */
+let resizeTimer;
+window.addEventListener('resize', () => {
+  sizeSvg();
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => fitToView(), 150);
+});
+</script>
+</body>
+</html>
+"""
+
+
+def render(graph: dict) -> str:
+    return (
+        TEMPLATE
+        .replace("__D3_CDN__", D3_CDN)
+        .replace("__NODE_COUNT__", str(len(graph["nodes"])))
+        .replace("__LINK_COUNT__", str(len(graph["links"])))
+        .replace("__GRAPH_DATA__", json.dumps(graph))
+    )
+
+
+def main(indir: str, out: str) -> None:
+    graph = load_graph(indir)
+    # newline="\n" so the emitted HTML is byte-identical on Windows and POSIX.
+    # Without it Python translates to CRLF here, and the test harness matches on
+    # "<script>\n(const DATA...".
+    with open(out, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write(render(graph))
+    print(f"Wrote {out} ({len(graph['nodes'])} nodes, {len(graph['links'])} links)")
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Build the network visualization.")
+    parser.add_argument("--indir", default=".", help="Directory holding nodes.csv and edges.csv")
+    parser.add_argument("--out", default="greys_network.html", help="Output HTML path")
+    args = parser.parse_args()
+    main(args.indir, args.out)

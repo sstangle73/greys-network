@@ -1,0 +1,10 @@
+# Keep LF in the working tree on every platform.
+#
+# This is not cosmetic. greys_network.html is generated with newline="\n" and
+# the test suites match on "<script>\n(const DATA". If git checked the file out
+# with CRLF on Windows, all three suites would fail on a fresh clone -- which is
+# exactly the state this project was handed over in.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary

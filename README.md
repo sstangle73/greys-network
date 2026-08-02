@@ -1,0 +1,81 @@
+# Grey's Anatomy Universe — relationship network
+
+An interactive chart of every romantic and parental tie across **Grey's Anatomy**
+(22 seasons), **Station 19** (7) and **Private Practice** (6) — 231 connections
+between 183 characters, modelled so it can be replayed at any point in any of
+the three shows.
+
+**[View the chart →](https://sstangle73.gitlab.io/greys-network/)**
+
+## The point of it
+
+A relationship chart is usually a snapshot: everyone married to whoever they
+ended up with. This one is a *timeline*. Every tie knows when it started, when a
+hookup became a relationship, when the wedding was, when the divorce was, and
+when it ended — so the graph can be rewound to any episode and show you only
+what a viewer at that point would know.
+
+That makes it safe to look at mid-rewatch. Set the sliders to where you are and
+nothing later is on screen.
+
+### Three shows, three clocks
+
+The spinoffs each have their own season numbering, and conflating them is the
+single biggest source of error in a dataset like this. A `3x05` citation on
+Carina DeLuca's page is **Station 19** season 3 — which aired opposite Grey's
+season 16, not Grey's season 3.
+
+So every date here belongs to exactly one show, and each show gets its own
+toggle and its own cutoff. A tie appears once the show you're watching has
+actually revealed it: if Station 19 showed you a wedding that Grey's only
+mentioned in passing, the chart knows the difference.
+
+## Running it
+
+```bash
+python greys_network.py --outdir .          # data -> edges.csv, nodes.csv, shows.csv
+python build_visualization.py --indir .     # CSVs -> greys_network.html
+npm install && npm test                     # jsdom + d3; three suites, all must pass
+```
+
+`greys_network.html` is fully standalone — open it directly, no server needed.
+
+| file | role |
+|---|---|
+| `greys_network.py` | Source of truth. All relationship data as Python literals. |
+| `build_visualization.py` | CSVs → the standalone HTML page. |
+| `wiki_harvest.py` | Harvests the wiki and diffs it against `edges.csv`. |
+| `review.py` | Dumps a character's relationship prose for checking a tie by hand. |
+| `audit_apply.py` | Keeps `audit_tracker.csv` in step with `edges.csv`. |
+| `tests/` | Render check, UI driver, and cross-show date gating. |
+
+## Data quality
+
+All 162 romantic ties are source-checked against the wiki prose, tie by tie —
+`audit_tracker.csv` records the state of each. Episode citations were **not**
+trusted on their own: they routinely mark the episode where a past relationship
+was *narrated* rather than when it happened, which is how one tie ended up dated
+to a season its character never appears in.
+
+Known-soft spots are documented in `CLAUDE.md` rather than hidden — the one
+wedding with no citation anywhere, the pre-series marriages dated by convention,
+and the partners deliberately excluded for never appearing on screen.
+
+Where a date is genuinely uncertain it is dated **late** on purpose. A too-late
+date hides something you have already seen; a too-early one spoils you.
+
+## Sources & licence
+
+Relationship facts come from the [Grey's Anatomy Universe
+Wiki](https://greysanatomy.fandom.com/), which is licensed
+**[CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)** — full
+credit to its contributors. This repository stores *facts* (who, what, which
+season), not wiki prose; the harvester's local cache of article text is
+gitignored and never published. A handful of Season 21 dates the wiki had not
+yet covered were filled in from published episode recaps.
+
+Character names and the underlying works are the property of their respective
+rights holders. This is a non-commercial fan project with no affiliation to ABC,
+Shondaland, or Disney.
+
+Code is MIT licensed; see `LICENSE`.

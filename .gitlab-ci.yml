@@ -1,0 +1,38 @@
+# Rebuild the page from source on every push to the default branch, so the live
+# chart can never drift from greys_network.py. The tests run first and gate the
+# deploy -- they exist because of real regressions (a temporal dead zone that
+# broke the page entirely, and a freeze refactor that painted nothing).
+
+stages: [test, deploy]
+
+test:
+  stage: test
+  image: python:3.12-slim
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq --no-install-recommends nodejs npm
+    - pip install --quiet pandas
+    - npm ci --silent || npm install --silent
+  script:
+    - python greys_network.py --outdir .
+    - python build_visualization.py --indir .
+    - node tests/paintcheck.mjs
+    - node tests/runtime.mjs
+    - node tests/crossshow.mjs
+
+pages:
+  stage: deploy
+  image: python:3.12-slim
+  before_script:
+    - pip install --quiet pandas
+  script:
+    - python greys_network.py --outdir .
+    - python build_visualization.py --indir .
+    - mkdir -p public
+    - cp greys_network.html public/index.html
+    # Ship the datasets alongside the page -- they are the actual deliverable
+    # for anyone who wants to load this into Gephi or NetworkX.
+    - cp edges.csv nodes.csv shows.csv audit_tracker.csv public/
+  artifacts:
+    paths: [public]
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

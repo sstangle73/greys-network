@@ -1,0 +1,15 @@
+{
+  "name": "greys-network",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Grey's Anatomy relationship network - dataset and interactive chart",
+  "scripts": {
+    "build": "python greys_network.py --outdir . && python build_visualization.py --indir .",
+    "test": "node tests/paintcheck.mjs && node tests/runtime.mjs && node tests/crossshow.mjs"
+  },
+  "dependencies": {
+    "jsdom": "^24.0.0",
+    "d3": "^7.8.5",
+    "d3-force": "^3.0.0"
+  }
+}
