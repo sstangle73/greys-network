@@ -653,6 +653,20 @@ def build_edges() -> pd.DataFrame:
     sources = [(_romantic_edges(), None), (_pp_edges(), "PP"), (_s19_edges(), "S19")]
     for rows, forced in sources:
         for source, target, rtype, start, end in rows:
+            # A relationship that ends because someone dies ends WHEN they die.
+            # That date is already known, so an end sitting on the placeholder
+            # here is not missing information -- it is information the file
+            # already had and was not joining up. Derived rather than typed
+            # twice, so the two can never drift apart.
+            if end and end[1] <= 1:
+                for who in (source, target):
+                    death = DEATHS.get(who)
+                    if death and death[1] == end[0]:
+                        show_of_death = death[0]
+                        home = forced or _show_of(source, target)
+                        if show_of_death == home:
+                            end = (death[1], death[2])
+                        break
             # A fling is one episode by definition, so its end IS its start.
             # Episode numbers were backfilled onto starts without touching ends,
             # which left flings recorded as beginning at 6x22 and finishing at
