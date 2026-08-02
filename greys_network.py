@@ -117,9 +117,6 @@ DEFAULT_SHOW = "GA"
 # Ties whose home show is not Grey's. The home show is where the relationship
 # actually plays out, and its stage dates below are in THAT show's numbering.
 HOME_SHOW = {
-    frozenset({"Addison Montgomery", "Pete Wilder"}): "PP",
-    frozenset({"Addison Montgomery", "Sam Bennett"}): "PP",
-    frozenset({"Addison Montgomery", "Jake Reilly"}): "PP",
     frozenset({"Carina DeLuca", "Maya Bishop"}): "S19",
 }
 
@@ -253,9 +250,6 @@ def _romantic_edges() -> List[Tuple]:
         ("Derek Shepherd", "Rose", "Dating", (4, 1), (5, 1)),
         ("Addison Montgomery", "Mark Sloan", "Fling", (2, 1), (3, 1)),
         ("Addison Montgomery", "Alex Karev", "Fling", (3, 1), (3, 1)),
-        ("Addison Montgomery", "Pete Wilder", "Dating", (3, 1), (4, 1)),
-        ("Addison Montgomery", "Sam Bennett", "Dating", (4, 1), (6, 1)),
-        ("Addison Montgomery", "Jake Reilly", "Married", (5, 1), None),
         ("Mark Sloan", "Lexie Grey", "Dating", (5, 1), (8, 1)),
         ("Mark Sloan", "Callie Torres", "Fling", (3, 1), (7, 1)),
         ("Mark Sloan", "Reed Adamson", "Fling", (6, 1), (6, 1)),
@@ -761,6 +755,15 @@ def validate(edges: pd.DataFrame, nodes: pd.DataFrame) -> None:
     for couple in GOT_TOGETHER:
         assert couple in steady_pairs, \
             f"Got-together date on a couple with no Dating/Married edge: {set(couple)}"
+
+    # One romantic edge per pair. drop_duplicates() only catches rows that match
+    # exactly, so when the Private Practice ties were moved into _pp_edges() and
+    # the originals were left behind in the Grey's list, three couples were drawn
+    # twice with different dates and nothing complained.
+    romantic = edges[edges["Relationship_Type"] != "Parent"]
+    pairs = [frozenset(p) for p in zip(romantic["Source"], romantic["Target"])]
+    twice = {tuple(sorted(p)) for p in pairs if pairs.count(p) > 1}
+    assert not twice, f"Pair with more than one romantic edge: {sorted(twice)}"
 
     parented = set(edges.loc[edges["Relationship_Type"] == "Parent", "Target"])
     orphans = CHILDREN - parented
