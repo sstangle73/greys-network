@@ -173,8 +173,17 @@ TEMPLATE = r"""<!DOCTYPE html>
   .trace { display: block; margin-top: 10px; height: 14px; width: min(420px, 60vw); }
   /* In the masthead rather than buried in the credits: the table is the
      accessible form of this page, so it has to be reachable without first
-     operating an SVG force graph to find it. */
-  .alt-view { color: var(--dating); text-decoration: none; border-bottom: 1px solid currentColor; }
+     operating an SVG force graph to find it.
+
+     pointer-events must be re-enabled explicitly. The header sets
+     pointer-events:none on purpose, so that dragging the graph still works in
+     the strip underneath it -- which meant this link rendered perfectly and
+     silently swallowed every click. */
+  .alt-view {
+    color: var(--dating); text-decoration: none;
+    border-bottom: 1px solid currentColor;
+    pointer-events: auto;
+  }
   .alt-view:hover { color: var(--bone); }
 
   /* --- controls ---------------------------------------------------------- */

@@ -102,6 +102,16 @@ check('collapse button is outside the scrolling body', !railBody.contains(toggle
 // only exists once CI has renamed it.
 const chartHtml = fs.readFileSync('greys_network.html', 'utf8');
 check('chart links to the table', /href="table\.html"/.test(chartHtml));
+// The masthead is pointer-events:none so the graph stays draggable underneath
+// it. Anything clickable placed in there must opt back in, or it renders
+// perfectly and swallows every click.
+const sheet = chartHtml.split('</style>')[0];
+check('masthead link accepts clicks',
+      /\.alt-view\s*\{[^}]*pointer-events:\s*auto/s.test(sheet));
+for (const m of sheet.matchAll(/header\s*\{([^}]*)\}/gs)) {
+  check('masthead itself still lets drags through',
+        /pointer-events:\s*none/.test(m[1]));
+}
 if (fs.existsSync('table.html')) {
   const tableHtml = fs.readFileSync('table.html', 'utf8');
   check('table links back to the chart', /href="greys_network\.html"/.test(tableHtml));
