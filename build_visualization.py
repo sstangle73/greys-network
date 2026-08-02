@@ -262,11 +262,15 @@ TEMPLATE = r"""<!DOCTYPE html>
     letter-spacing: .16em; text-transform: uppercase; cursor: pointer;
   }
   .rail.collapsed .rail-body { display: block; }
+  /* Lives inside the transport. It used to float independently, which meant
+     three separately-positioned things competing for the bottom of a phone
+     screen -- and the fit button landed on top of the transport. One cluster
+     cannot overlap itself. */
   .btn-fit {
-    position: fixed; right: 24px; top: 92px; z-index: 5;
-    padding: 8px 12px; background: rgba(16,57,61,.92);
-    border: 1px solid var(--rule); color: var(--bone);
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+    flex: 0 0 auto; margin-left: 2px;
+    padding: 6px 10px; background: none;
+    border: 1px solid var(--rule); border-radius: 3px; color: var(--bone);
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
     letter-spacing: .14em; text-transform: uppercase; cursor: pointer;
   }
   .btn-fit:hover { border-color: var(--bone); }
@@ -484,8 +488,7 @@ TEMPLATE = r"""<!DOCTYPE html>
     .rail-body { margin-top: 12px; }
     .hint { display: none; }
     h1 { font-size: 16px; letter-spacing: .16em; }
-    .btn-fit { top: auto; bottom: 12px; right: 12px; }
-    .rail.collapsed ~ .btn-fit { bottom: 64px; }
+    /* Nothing to position: it rides inside the transport now. */
   }
   .trace-form { display: flex; gap: 6px; flex-wrap: wrap; }
   .trace-form input { flex: 1 1 96px; min-width: 0; }
@@ -652,9 +655,8 @@ TEMPLATE = r"""<!DOCTYPE html>
 <div class="transport" id="transport">
   <button id="play-mini" type="button" aria-pressed="false" aria-label="Play the timeline">&#9654;</button>
   <div class="transport-read" id="transport-read"></div>
+  <button class="btn-fit" id="fit" title="Fit the whole chart on screen">Fit</button>
 </div>
-
-<button class="btn-fit" id="fit">Fit to screen</button>
 
 <aside class="detail" id="detail" aria-live="polite">
   <button class="close" id="close" aria-label="Close panel">&times;</button>
@@ -835,8 +837,23 @@ const fill = n => {
 };
 
 // Base geometry, all multiplied by the user's spacing setting.
-const BASE_LINK = 118, BASE_PARENT_LINK = 66, BASE_CHARGE = -460, BASE_COLLIDE = 24;
+const BASE_LINK = 132, BASE_PARENT_LINK = 74, BASE_CHARGE = -520, BASE_COLLIDE = 24;
 let spacing = 1;
+
+// Card sizes are measured HERE, before the simulation exists, because the link
+// force resolves its distance accessor once at initialisation -- not per tick
+// like collide does. Sizing the nodes further down (where this used to live)
+// meant link distances were computed from an undefined width and came out NaN,
+// which silently strands most of the graph at no position at all.
+const HUB_AT_SIZE = 3;
+DATA.nodes.forEach(d => {
+  const label = (d.ds !== null ? '† ' : '') + d.id;
+  d.label = label;
+  const hub = d.degree >= HUB_AT_SIZE;
+  d.h = hub ? 26 : 15;
+  d.w = hub ? label.length * 6.6 + 22 + (d.image ? 22 : 0)
+            : label.length * 5.6 + 8;
+});
 
 const sim = d3.forceSimulation(DATA.nodes)
   .force('link', d3.forceLink(DATA.links).id(d => d.id).strength(.4))
@@ -852,16 +869,39 @@ function applySpacing() {
   // Someone with a single connection is a satellite: pull them in tight so they
   // read as belonging to that person instead of floating in the soup.
   const satellite = l => Math.min(l.source.degree, l.target.degree) <= 1;
+
+  // A fixed satellite distance is the thing that was forcing overlap. Everyone
+  // hanging off one person sat on the same small circle, so a hub with eight
+  // partners had ~465px of circumference to fit ~800px of name cards into --
+  // no amount of collide iterations can fix a ring that is too small. Size the
+  // ring from the hub's degree and the width of what has to fit on it.
+  const ringFor = l => {
+    const hub = l.source.degree >= l.target.degree ? l.source : l.target;
+    const leaf = hub === l.source ? l.target : l.source;
+    const needed = (hub.degree * (leaf.w + 16)) / (2 * Math.PI);
+    return Math.max(78, needed);
+  };
+
   sim.force('link')
     .distance(l => satellite(l)
-      ? 74 * spacing
+      ? ringFor(l) * spacing
       : (l.type === 'Parent' ? BASE_PARENT_LINK : BASE_LINK) * spacing)
-    .strength(l => satellite(l) ? .9 : .35);
+    // Satellites hold their ring firmly; the rest of the graph stays loose
+    // enough for the collide pass to do its work.
+    .strength(l => satellite(l) ? .75 : .35);
   sim.force('charge')
     .strength(d => (d.degree <= 1 ? BASE_CHARGE * .35 : BASE_CHARGE) * spacing)
     .distanceMax(760 * spacing);
   // Cards are wide, so collide on half the card width, not a notional radius.
-  sim.force('collide').radius(d => d.w / 2 + 9 * spacing).strength(.9);
+  // iterations matters more than any of the distances here: forceCollide only
+  // does one relaxation pass by default, which leaves plenty of contacts
+  // unresolved -- and because the layout FREEZES afterwards, whatever is still
+  // overlapping stays overlapping forever. Three passes cut measured overlap
+  // from 62 pairs to a handful.
+  sim.force('collide')
+    .radius(d => Math.max(d.w / 2, d.h) + 13 * spacing)
+    .strength(.95)
+    .iterations(3);
   sim.force('x').x(0).strength(.05 / spacing);
   sim.force('y').y(0).strength(.07 / spacing);
 }
@@ -873,7 +913,7 @@ function relayout() {
   applySpacing();
   DATA.nodes.forEach(n => { n.fx = n.fy = null; });
   sim.alpha(1).stop();
-  for (let i = 0; i < 340; i++) sim.tick();
+  for (let i = 0; i < 460; i++) sim.tick();
   freezeLayout();
   renderPositions();
   applyCutoff();
@@ -886,14 +926,8 @@ function relayout() {
 const HUB_AT = 3;
 const isHub = d => d.degree >= HUB_AT;
 
-DATA.nodes.forEach(d => {
-  const label = (d.ds !== null ? '\u2020 ' : '') + d.id;
-  d.label = label;
-  d.h = isHub(d) ? 26 : 15;
-  d.w = isHub(d)
-    ? label.length * 6.6 + 22 + (d.image ? 22 : 0)
-    : label.length * 5.6 + 8;
-});
+// (node sizes are measured up with the geometry constants -- the link force
+// needs them before the simulation initialises)
 
 // Curved connectors. A quadratic bow means two people with several kinds of
 // history don't overlap into one ambiguous straight line, and it reads far
@@ -1240,7 +1274,7 @@ function fitToView(duration = 400, floor = 0) {
 // Settle the layout off-screen first, then frame it, so the graph is never
 // rendered mid-explosion or half outside the canvas.
 sim.stop();
-for (let i = 0; i < 320; i++) sim.tick();
+for (let i = 0; i < 440; i++) sim.tick();
 freezeLayout();
 // Positions are only written by renderPositions, which used to be driven by the
 // simulation's tick. Now that the layout freezes instead of running, boot has to

@@ -29,11 +29,16 @@ function report(label){
   const withD=links.filter(l=>l.getAttribute('d'));
   const coords=withT.map(n=>n.getAttribute('transform'));
   const distinct=new Set(coords).size;
+  // "Has a transform" is not the same as "is somewhere". A NaN in the layout
+  // produces translate(NaN,NaN), which counts as painted and as distinct, so
+  // this suite once passed with 130 of 183 nodes at no position at all.
+  const nan=coords.filter(t=>/NaN|Infinity/.test(t)).length;
   console.log(`${label}
-  nodes painted:   ${withT.length}/${nodes.length}   (at origin: ${atOrigin.length})
+  nodes painted:   ${withT.length}/${nodes.length}   (at origin: ${atOrigin.length}, unplaced: ${nan})
   distinct positions: ${distinct}
   links with a path: ${withD.length}/${links.length}`);
-  return withT.length===nodes.length && withD.length===links.length && distinct>50;
+  return withT.length===nodes.length && withD.length===links.length
+      && distinct>50 && nan===0;
 }
 const bootOk=report('at boot:');
 

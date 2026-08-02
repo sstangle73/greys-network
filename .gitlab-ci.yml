@@ -51,6 +51,7 @@ test:
     - node tests/runtime.mjs
     - node tests/crossshow.mjs
     - node tests/mobile.mjs
+    - node tests/overlap.mjs
 
 pages:
   stage: deploy
