@@ -38,6 +38,10 @@ import urllib.request
 from wiki_harvest import ALIASES, CACHE, UA, WIKI
 
 OUT = "portraits"
+# Which wiki file each character's portrait comes from. A filename is a fact, so
+# this IS committed -- which lets CI download the images without needing the
+# gitignored wikicache, and without re-harvesting 68 articles to learn 66 names.
+SOURCES = "portrait_sources.csv"
 PAUSE = 1.0          # the wiki is free and volunteer-run; same courtesy as the harvester
 WIDTH = 200          # a node card is ~44px; 200 covers retina without pulling 3000px originals
 
@@ -89,9 +93,46 @@ def slug(name):
     return re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")
 
 
+def build_sources():
+    """Character -> wiki image filename, from the harvested articles.
+
+    Rewrites portrait_sources.csv when the wikicache is present. When it is not
+    -- a fresh clone, or CI -- the committed file is used as-is, so the images
+    can be fetched without re-harvesting every article to rediscover 66 names.
+    """
+    pages = cached_pages()
+    if not pages:
+        return None
+    found = {}
+    for name, path in pages.items():
+        field = image_field(path)
+        if field:
+            found[name] = field
+    if not found:
+        return None
+    with open(SOURCES, "w", newline="", encoding="utf-8") as fh:
+        writer = csv.writer(fh)
+        writer.writerow(["Character", "WikiFile"])
+        writer.writerows(sorted(found.items()))
+    return found
+
+
+def load_sources():
+    if not os.path.exists(SOURCES):
+        return {}
+    with open(SOURCES, encoding="utf-8") as fh:
+        return {row["Character"]: row["WikiFile"] for row in csv.DictReader(fh)}
+
+
 def main(limit=None):
     os.makedirs(OUT, exist_ok=True)
-    pages = cached_pages()
+
+    sources = build_sources()
+    if sources is None:
+        sources = load_sources()
+        print(f"no wikicache; using {SOURCES} ({len(sources)} entries)")
+    if not sources:
+        sys.exit(f"nothing to fetch: no wikicache and no {SOURCES}")
 
     with open("nodes.csv", encoding="utf-8") as fh:
         characters = [row["Character"] for row in csv.DictReader(fh)]
@@ -100,11 +141,7 @@ def main(limit=None):
 
     manifest, missing, failed = [], [], []
     for name in characters:
-        path = pages.get(name)
-        if not path:
-            missing.append(name)
-            continue
-        field = image_field(path)
+        field = sources.get(name)
         if not field:
             missing.append(name)
             continue

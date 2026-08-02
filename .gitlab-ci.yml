@@ -22,13 +22,27 @@ test:
 pages:
   stage: deploy
   image: python:3.12-slim
+  # Portraits are fetched here rather than committed, so the images live only in
+  # the deployed artifact and never enter git history -- taking them down later
+  # is a one-line change to this file, not a history rewrite.
+  #
+  # The cache is not an optimisation, it is basic courtesy: without it every
+  # push would re-request 66 images from a free, volunteer-run wiki.
+  cache:
+    key: portraits-v1
+    paths:
+      - portraits/
   before_script:
     - pip install --quiet pandas
   script:
     - python greys_network.py --outdir .
+    # Non-fatal on purpose. A wiki outage should cost the site its decoration,
+    # never the chart itself.
+    - python fetch_portraits.py || echo "portrait fetch failed - publishing without them"
     - python build_visualization.py --indir .
     - mkdir -p public
     - cp greys_network.html public/index.html
+    - if [ -d portraits ]; then cp -r portraits public/; fi
     # Ship the datasets alongside the page -- they are the actual deliverable
     # for anyone who wants to load this into Gephi or NetworkX.
     - cp edges.csv nodes.csv shows.csv audit_tracker.csv public/
