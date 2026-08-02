@@ -1,33 +1,66 @@
-# Rebuild the page from source on every push to the default branch, so the live
-# chart can never drift from greys_network.py. The tests run first and gate the
-# deploy -- they exist because of real regressions (a temporal dead zone that
-# broke the page entirely, and a freeze refactor that painted nothing).
+# Runs on a self-hosted runner (shared runners are disabled for this project),
+# which changes what is worth optimising: image layers and caches live on the
+# host and survive between pipelines, so the wins come from not redoing work
+# rather than from doing it faster.
+#
+# The old single test job installed Node with apt on a Python image every run.
+# Splitting by language means each job uses an image that already has what it
+# needs, and neither installs a toolchain at all.
 
-stages: [test, deploy]
+stages: [build, test, deploy]
 
-test:
-  stage: test
+variables:
+  GIT_DEPTH: "20"
+
+# Datasets and the page are generated from greys_network.py, never committed.
+# Building once and passing artifacts forward keeps test and deploy honest:
+# they exercise the same bytes, not their own rebuild.
+build:
+  stage: build
   image: python:3.12-slim
   before_script:
-    - apt-get update -qq && apt-get install -y -qq --no-install-recommends nodejs npm
     - pip install --quiet pandas
-    - npm ci --silent || npm install --silent
   script:
     - python greys_network.py --outdir .
     - python build_visualization.py --indir .
+  artifacts:
+    expire_in: 1 day
+    paths:
+      - edges.csv
+      - nodes.csv
+      - shows.csv
+      - greys_network.html
+
+test:
+  stage: test
+  image: node:20-slim
+  needs: [build]
+  # Keyed on the lockfile: a dependency change busts it, a data change does not.
+  cache:
+    key:
+      files:
+        - package-lock.json
+    paths:
+      - node_modules/
+    policy: pull-push
+  script:
+    - npm ci --silent --no-audit --no-fund
     - node tests/paintcheck.mjs
     - node tests/runtime.mjs
     - node tests/crossshow.mjs
+    - node tests/mobile.mjs
 
 pages:
   stage: deploy
   image: python:3.12-slim
+  needs: [build, test]
   # Portraits are fetched here rather than committed, so the images live only in
   # the deployed artifact and never enter git history -- taking them down later
   # is a one-line change to this file, not a history rewrite.
   #
   # The cache is not an optimisation, it is basic courtesy: without it every
-  # push would re-request 66 images from a free, volunteer-run wiki.
+  # push would re-request 66 images from a free, volunteer-run wiki. On a
+  # persistent runner it is a local directory, so this costs nothing.
   cache:
     key: portraits-v1
     paths:
@@ -35,17 +68,16 @@ pages:
   before_script:
     - pip install --quiet pandas
   script:
-    - python greys_network.py --outdir .
     # Non-fatal on purpose. A wiki outage should cost the site its decoration,
     # never the chart itself.
     - python fetch_portraits.py || echo "portrait fetch failed - publishing without them"
+    # Rebuild so the page picks up whatever portraits are now cached; the CSVs
+    # come from the build job unchanged.
     - python build_visualization.py --indir .
     - mkdir -p public
     - cp greys_network.html public/index.html
-    - if [ -d portraits ]; then cp -r portraits public/; fi
-    # Ship the datasets alongside the page -- they are the actual deliverable
-    # for anyone who wants to load this into Gephi or NetworkX.
     - cp edges.csv nodes.csv shows.csv audit_tracker.csv public/
+    - if [ -d portraits ]; then cp -r portraits public/; fi
   artifacts:
     paths: [public]
   rules:
