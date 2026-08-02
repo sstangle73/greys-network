@@ -31,6 +31,14 @@ def load_graph(indir: str) -> dict:
     edges = pd.read_csv(os.path.join(indir, "edges.csv")).fillna("")
     shows = pd.read_csv(os.path.join(indir, "shows.csv")).fillna("")
 
+    # Portraits are a local cache, not part of the dataset -- nodes.csv stays
+    # portable and the page picks them up only where they actually exist.
+    manifest = os.path.join(indir, "portraits", "manifest.csv")
+    faces = {}
+    if os.path.exists(manifest):
+        faces = dict(pd.read_csv(manifest).fillna("")
+                     [["Character", "File"]].itertuples(index=False, name=None))
+
     # Degree drives node size, so the network's gravitational centers are obvious.
     degree = (
         pd.concat([edges["Source"], edges["Target"]])
@@ -46,7 +54,7 @@ def load_graph(indir: str) -> dict:
         {
             "id": row.Character,
             "status": row.Status,
-            "image": row.Image_URL,
+            "image": row.Image_URL or faces.get(row.Character, ""),
             "degree": int(degree.get(row.Character, 0)),
             "dshow": row.Death_Show or "GA",
             "ds": as_int(row.Death_Season),
@@ -179,6 +187,33 @@ TEMPLATE = r"""<!DOCTYPE html>
   }
   /* Never scrolls away: it is the only way back out. */
   .rail-toggle { flex: 0 0 auto; }
+  /* Three groups plus a reference sheet, rather than one very tall column.
+     Only one is mounted at a time, which is what keeps the rail short enough
+     that its top -- and its collapse button -- stay on screen. */
+  .tabs { display: flex; gap: 4px; flex: 0 0 auto; margin-bottom: 12px; }
+  .tabs button {
+    flex: 1; padding: 7px 4px;
+    background: none; border: 1px solid var(--rule); color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
+    letter-spacing: .12em; text-transform: uppercase; cursor: pointer;
+  }
+  .tabs button[data-tab="key"] { flex: 0 0 32px; letter-spacing: 0; }
+  .tabs button[aria-selected="true"] {
+    background: var(--rule); color: var(--bone);
+  }
+  .rail.collapsed .tabs { display: none; }
+  .play-form { display: flex; gap: 6px; margin-bottom: 14px; }
+  .play-form select {
+    flex: 1; min-width: 0; padding: 7px 8px;
+    background: var(--ground); border: 1px solid var(--rule); color: var(--bone);
+    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
+  }
+  .play-form button {
+    flex: 0 0 66px; background: var(--rule); color: var(--bone); border: 0;
+    border-radius: 3px; font-family: 'Archivo', sans-serif; font-size: 11px;
+    letter-spacing: .06em; text-transform: uppercase; cursor: pointer;
+  }
+  .play-form button[aria-pressed="true"] { background: var(--fling); color: var(--ground); }
   .rail-body {
     overflow-y: auto; min-height: 0;
     overscroll-behavior: contain;      /* don't scroll the page behind it */
@@ -404,34 +439,56 @@ TEMPLATE = r"""<!DOCTYPE html>
 
 <div class="rail collapsed" id="rail">
   <button class="rail-toggle" id="rail-toggle" aria-expanded="false">Search &amp; filters</button>
+  <div class="tabs" role="tablist">
+    <button role="tab" data-tab="when" aria-selected="true">When</button>
+    <button role="tab" data-tab="find" aria-selected="false">Find</button>
+    <button role="tab" data-tab="show" aria-selected="false">Show</button>
+    <button role="tab" data-tab="key" aria-selected="false" title="What the symbols mean">?</button>
+  </div>
   <div class="rail-body">
-    <h2>Watched through</h2>
-    <div class="cutoff" id="cutoffs"></div>
-    <div class="cutoff-note" id="cutoff-note"></div>
-    <h2>Spacing</h2>
-    <label class="slider-row">
-      <span id="spacing-read">1.0&times;</span>
-      <input type="range" id="spacing" min="6" max="22" value="10" />
-    </label>
-    <h2>Find a character</h2>
-    <input id="search" type="search" placeholder="e.g. Meredith" autocomplete="off"
-           list="cast" spellcheck="false" />
-    <datalist id="cast"></datalist>
-    <h2>Trace a connection</h2>
-    <div class="trace-form">
-      <input id="from" type="search" placeholder="From" autocomplete="off"
+
+    <section data-panel="when">
+      <h2>Watched through</h2>
+      <div class="cutoff" id="cutoffs"></div>
+      <div class="cutoff-note" id="cutoff-note"></div>
+      <h2>Play the timeline</h2>
+      <div class="play-form">
+        <select id="play-show" aria-label="Show to play"></select>
+        <button id="play" type="button" aria-pressed="false">Play</button>
+      </div>
+      <label class="past-toggle">
+        <input type="checkbox" id="past" checked />
+        Include past relationships<span class="count" id="past-count"></span>
+      </label>
+    </section>
+
+    <section data-panel="find" hidden>
+      <h2>Find a character</h2>
+      <input id="search" type="search" placeholder="e.g. Meredith" autocomplete="off"
              list="cast" spellcheck="false" />
-      <input id="to" type="search" placeholder="To" autocomplete="off"
-             list="cast" spellcheck="false" />
-      <button id="trace-go" type="button">Trace</button>
-    </div>
-    <div class="trace-out" id="trace-out"></div>
-    <h2>Connection type</h2>
-    <div class="key" id="key"></div>
-    <label class="past-toggle">
-      <input type="checkbox" id="past" checked />
-      Include past relationships<span class="count" id="past-count"></span>
-    </label>
+      <datalist id="cast"></datalist>
+      <h2>Trace a connection</h2>
+      <div class="trace-form">
+        <input id="from" type="search" placeholder="From" autocomplete="off"
+               list="cast" spellcheck="false" />
+        <input id="to" type="search" placeholder="To" autocomplete="off"
+               list="cast" spellcheck="false" />
+        <button id="trace-go" type="button">Trace</button>
+      </div>
+      <div class="trace-out" id="trace-out"></div>
+    </section>
+
+    <section data-panel="show" hidden>
+      <h2>Connection type</h2>
+      <div class="key" id="key"></div>
+      <h2>Spacing</h2>
+      <label class="slider-row">
+        <span id="spacing-read">1.0&times;</span>
+        <input type="range" id="spacing" min="6" max="22" value="10" />
+      </label>
+    </section>
+
+    <section data-panel="key" hidden>
     <h2>Markers</h2>
     <div class="glyphkey">
       <span><svg viewBox="-10 -10 20 20"><circle r="8" fill="none" stroke="#E8B84B" stroke-width="1.4"/><text y="3.2" text-anchor="middle" fill="#E8B84B" font-size="9">&#9829;</text></svg> Married</span>
@@ -451,6 +508,8 @@ TEMPLATE = r"""<!DOCTYPE html>
       Facts from the <a href="https://greysanatomy.fandom.com/" target="_blank" rel="noopener noreferrer">Grey&rsquo;s Anatomy Universe Wiki</a> (CC BY-SA).
       <a href="https://gitlab.com/sstangle73/greys-network" target="_blank" rel="noopener noreferrer">Source &amp; data</a>.
     </div>
+    </section>
+
   </div>
 </div>
 
@@ -1203,6 +1262,93 @@ function refreshCastList() {
   d3.select('#cast').selectAll('option').data(names)
     .join('option').attr('value', d => d);
 }
+
+/* ---- rail tabs ----------------------------------------------------------- */
+const tabButtons = [...document.querySelectorAll('.tabs [role="tab"]')];
+const panels = [...document.querySelectorAll('[data-panel]')];
+function showTab(name) {
+  tabButtons.forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+  panels.forEach(p => { p.hidden = p.dataset.panel !== name; });
+}
+tabButtons.forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+/* ---- timeline playback --------------------------------------------------- */
+// Walks one show's cutoff forward an episode at a time so the network can be
+// watched assembling itself. Deliberately does NOT refit between frames: the
+// camera chasing a growing graph is unwatchable, and the whole point is to see
+// where new ties appear relative to the ones already there.
+let playTimer = null;
+let playShow = 'GA';
+
+function playableEnd(key) {
+  const meta = SHOW_BY_KEY[key];
+  return { s: meta.seasons, e: meta.episodes };
+}
+
+function atEnd(key) {
+  const end = playableEnd(key);
+  return cuts[key].s >= end.s && cuts[key].e >= end.e;
+}
+
+function stepPlayback() {
+  const key = playShow;
+  const meta = SHOW_BY_KEY[key];
+  let { s, e } = cuts[key];
+  e += 1;
+  if (e > meta.episodes) { e = 1; s += 1; }
+  if (s > meta.seasons) { stopPlayback(); return; }
+  cuts[key] = { s, e };
+
+  const sfx = key === 'GA' ? '' : '-' + key;
+  const ss = document.getElementById('season' + sfx);
+  const ee = document.getElementById('episode' + sfx);
+  if (ss) ss.value = s;
+  if (ee) ee.value = e;
+  applyCutoff(false);
+  if (atEnd(key)) stopPlayback();
+}
+
+function stopPlayback() {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; }
+  const btn = document.getElementById('play');
+  if (btn) { btn.textContent = 'Play'; btn.setAttribute('aria-pressed', 'false'); }
+}
+
+function startPlayback() {
+  const key = document.getElementById('play-show').value;
+  playShow = key;
+  if (!enabled.has(key)) {
+    const box = document.getElementById(key === 'GA' ? 'on' : 'on-' + key);
+    if (box) { box.checked = true; box.dispatchEvent(new Event('change')); }
+  }
+  // Starting from the end and immediately stopping is a confusing no-op, so
+  // rewind to the beginning first.
+  if (atEnd(key)) {
+    cuts[key] = { s: 1, e: 1 };
+    const sfx = key === 'GA' ? '' : '-' + key;
+    const ss = document.getElementById('season' + sfx);
+    const ee = document.getElementById('episode' + sfx);
+    if (ss) ss.value = 1;
+    if (ee) ee.value = 1;
+    applyCutoff(false);
+  }
+  const btn = document.getElementById('play');
+  btn.textContent = 'Pause';
+  btn.setAttribute('aria-pressed', 'true');
+  playTimer = setInterval(stepPlayback, 260);
+}
+
+d3.select('#play-show').selectAll('option')
+  .data(DATA.shows)
+  .join('option')
+  .attr('value', sh => sh.key)
+  .text(sh => sh.title);
+
+document.getElementById('play').addEventListener('click', () => {
+  playTimer ? stopPlayback() : startPlayback();
+});
+// Touching any cutoff by hand means you have taken over.
+document.getElementById('play-show').addEventListener('change', stopPlayback);
 
 /* ---- trace a connection -------------------------------------------------- */
 // Breadth-first over the links that are ACTUALLY ON SCREEN, so a route can never

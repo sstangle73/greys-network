@@ -1,4 +1,12 @@
 wikicache/
 candidate_edges.csv
+# Character portraits are screencaps belonging to ABC/Shondaland, not facts.
+# Caching them locally is fine; committing them to a public repo is
+# redistribution. Remove this line deliberately if you decide to publish them.
+portraits/
+# Build artifact. CI regenerates it for the live site, and a local build embeds
+# portrait paths that only exist on the machine that cached them -- committing
+# it would mean broken images for anyone cloning, plus churn on every rebuild.
+greys_network.html
 node_modules/
 __pycache__/

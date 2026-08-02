@@ -137,6 +137,36 @@ if (!errors.length) {
                                    fire(doc.getElementById('season'),'input');
                                    const h=window.location.hash;
                                    if(!/GA=7\./.test(h)) throw new Error(`hash missing cutoff: ${h}`);}],
+    // Tabs: only one group is mounted at a time, which is what keeps the rail
+    // short enough that its collapse button stays reachable on a phone.
+    ['tabs mount one panel',  ()=>{const tabs=[...doc.querySelectorAll('.tabs [role="tab"]')];
+                                   if(tabs.length<4) throw new Error(`${tabs.length} tabs`);
+                                   const open=[...doc.querySelectorAll('[data-panel]')].filter(p=>!p.hidden);
+                                   if(open.length!==1) throw new Error(`${open.length} panels visible`);}],
+    ['switching tabs swaps the panel',()=>{
+                                   fire(doc.querySelector('[data-tab="find"]'),'click');
+                                   const open=[...doc.querySelectorAll('[data-panel]')].filter(p=>!p.hidden);
+                                   if(open.length!==1||open[0].dataset.panel!=='find')
+                                     throw new Error(`showing ${open.map(p=>p.dataset.panel)}`);
+                                   fire(doc.querySelector('[data-tab="when"]'),'click');}],
+    // Playback drives ONE show's cutoff. Pressing play at the end rewinds first
+    // -- otherwise it stops instantly and looks broken. That rewind is
+    // synchronous, so it can be asserted without waiting on the interval.
+    ['play rewinds and engages',()=>{const season=doc.getElementById('season');
+                                   const ppBefore=doc.getElementById('season-PP').value;
+                                   season.value=22; doc.getElementById('episode').value=27;
+                                   fire(season,'input');
+                                   const btn=doc.getElementById('play');
+                                   fire(btn,'click');
+                                   if(btn.getAttribute('aria-pressed')!=='true')
+                                     throw new Error('play did not engage');
+                                   if(season.value!=='1')
+                                     throw new Error(`expected rewind to S1, got S${season.value}`);
+                                   if(doc.getElementById('season-PP').value!==ppBefore)
+                                     throw new Error('playing Grey\'s moved another show');
+                                   fire(btn,'click');
+                                   if(btn.getAttribute('aria-pressed')!=='false')
+                                     throw new Error('pause did not disengage');}],
     ['hidden types land in the URL',()=>{const cb=doc.querySelector('[data-type="Fling"]');
                                    cb.checked=false; fire(cb,'change');
                                    if(!/hide=.*Fling/.test(window.location.hash))

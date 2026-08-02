@@ -644,6 +644,10 @@ def build_nodes(edges: pd.DataFrame) -> pd.DataFrame:
     names = pd.unique(edges[["Source", "Target"]].values.ravel())
     df = pd.DataFrame({"Character": sorted(names)})
     df["Status"] = df["Character"].apply(classify_status)
+    # Left blank on purpose. Portraits are a LOCAL presentation asset, not data:
+    # baking cache paths in here would make the published nodes.csv depend on
+    # whether someone had run fetch_portraits.py. build_visualization.py reads
+    # the manifest at render time instead.
     df["Image_URL"] = IMAGE_PLACEHOLDER
     # A death is an event in one show, so it needs the same show tag an edge
     # does -- otherwise Station 19 season 3 would black out a Grey's character.

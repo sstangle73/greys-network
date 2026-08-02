@@ -66,6 +66,19 @@ npm install && npm test                     # jsdom + d3; three suites, all must
 ```
 
 `greys_network.html` is fully standalone — open it directly, no server needed.
+It is a build artifact and is not committed; run the two commands above to get it.
+
+**Optional — character portraits:**
+
+```bash
+python fetch_portraits.py     # caches ~66 headshots into portraits/
+python build_visualization.py --indir .
+```
+
+Node cards become circular portraits automatically. `portraits/` is gitignored:
+unlike the relationship data, those images are screencaps belonging to their
+rights holders rather than facts, so caching them for a personal chart and
+republishing them are different things. The published site runs without them.
 
 | file | role |
 |---|---|
