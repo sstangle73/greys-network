@@ -122,6 +122,34 @@ Nodes carry `Death_Season`/`Death_Episode`, so status is also point-in-time.
 - Every `Divorced` outcome needs a matching `Married` edge
 - Timeline is monotonic: nothing appears then vanishes as you watch forward
 
+## Parent edges: three conventions, not one
+
+The stated rule is "dated to when the child appears", and that only covers
+children born during a show. Two other rules are silently in play, and the
+parent audit surfaced them:
+
+- **Adult children who are cast members** are dated to when the *parentage is
+  revealed*, not when the person appears. Jackson debuts in S6 and his edge to
+  Catherine is S8; Addison debuts in PP S1 and her edge to The Captain is PP S3.
+- **Children who never appear at all** are dated to the dialogue reveal. Eli and
+  Alexis are S16 for that reason.
+
+Both are defensible — a chart of what a viewer knows should move when the viewer
+learns something — but they are different rules, so don't "fix" one to match
+the other without deciding which you mean.
+
+**A parent can join later than the other.** Owen fosters Leo alone at 14x20;
+Teddy is not co-parenting until S16. Ben and Bailey take Pru in after Dean dies.
+One date for both parents would have to be wrong for one of them.
+
+## Node names are short forms, not wiki titles
+
+`Bailey Shepherd` is *Derek Bailey Shepherd* on the wiki; `Tuck Jones` is
+*William George Bailey Jones*; `Eli`/`Alexis Karev` are *Stevens*; `Molly Grey`
+is *Molly Thompson*; `Scout Lincoln` is *Scout Derek Shepherd Lincoln*. The
+short forms read better on a chart, but anything that joins this data back to
+the wiki by name needs the alias table in `wiki_harvest.py`.
+
 ## Sources, in order of trust
 
 1. **Grey's Anatomy Universe Wiki** (greysanatomy.fandom.com) — structured

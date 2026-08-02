@@ -107,6 +107,9 @@ CHILDREN = {
     "Christopher Shepherd",
     # Station 19
     "Pru Miller-Warren", "Liam DeLuca-Bishop",
+    "Andrea DeLuca-Bishop", "Gianna DeLuca-Bishop",
+    # Added by the parent-edge audit
+    "Samuel Avery", "Joey Warren", "Mason Warner", "Angela Reilly",
 }
 
 DEFAULT_STATUS = "Alive"
@@ -392,28 +395,46 @@ def _romantic_edges() -> List[Tuple]:
 def _parent_edges() -> List[Tuple]:
     """(parent_a, parent_b, child, season[, episode]) -- season the child appears."""
     pairs = [
-        ("Meredith Grey", "Derek Shepherd", "Zola Shepherd", 7),
-        ("Meredith Grey", "Derek Shepherd", "Bailey Shepherd", 9),
-        ("Meredith Grey", "Derek Shepherd", "Ellis Shepherd", 12),
-        ("Callie Torres", "Mark Sloan", "Sofia Robbin Sloan Torres", 7),
-        ("Arizona Robbins", None, "Sofia Robbin Sloan Torres", 7),
-        ("Mark Sloan", None, "Sloan Riley", 6),
-        ("Izzie Stevens", "Alex Karev", "Eli Karev", 16),
-        ("Izzie Stevens", "Alex Karev", "Alexis Karev", 16),
-        ("Jo Wilson", None, "Luna Wilson", 17),
-        ("Amelia Shepherd", "Atticus Lincoln", "Scout Lincoln", 17),
-        ("Jo Wilson", "Atticus Lincoln", "Peyton Lincoln", 22, 6),
-        ("Jo Wilson", "Atticus Lincoln", "Hattie Lincoln", 22, 6),
-        ("Owen Hunt", "Teddy Altman", "Allison Hunt", 16),
-        ("Owen Hunt", "Teddy Altman", "Leo Hunt", 15),
-        ("April Kepner", "Jackson Avery", "Harriet Avery", 13),
-        ("Miranda Bailey", "Tucker Jones", "Tuck Jones", 2),
-        ("Richard Webber", "Ellis Grey", "Maggie Pierce", 10),
-        ("Ellis Grey", "Thatcher Grey", "Meredith Grey", 1),
-        ("Thatcher Grey", "Susan Grey", "Molly Grey", 3),
-        ("Thatcher Grey", None, "Lexie Grey", 3),
-        ("Catherine Fox", None, "Jackson Avery", 8),
-        ("Megan Hunt", "Nathan Riggs", "Farouk Hunt", 14),
+        ("Meredith Grey", "Derek Shepherd", "Zola Shepherd", 7, 20),
+        ("Meredith Grey", "Derek Shepherd", "Bailey Shepherd", 9, 24),
+        ("Meredith Grey", "Derek Shepherd", "Ellis Shepherd", 12, 9),
+        ("Callie Torres", "Mark Sloan", "Sofia Robbin Sloan Torres", 7, 18),
+        ("Arizona Robbins", None, "Sofia Robbin Sloan Torres", 7, 18),
+        ("Mark Sloan", None, "Sloan Riley", 6, 10),
+        # Never appear on screen; S16 is the dialogue reveal, not a first
+        # appearance. Dated to the reveal deliberately -- that is when a viewer
+        # learns they exist, which is what this chart is modelling.
+        ("Izzie Stevens", "Alex Karev", "Eli Karev", 16, 16),
+        ("Izzie Stevens", "Alex Karev", "Alexis Karev", 16, 16),
+        ("Jo Wilson", None, "Luna Wilson", 17, 3),
+        ("Amelia Shepherd", "Atticus Lincoln", "Scout Lincoln", 17, 1),
+        ("Jo Wilson", "Atticus Lincoln", "Peyton Lincoln", 22, 7),
+        ("Jo Wilson", "Atticus Lincoln", "Hattie Lincoln", 22, 7),
+        ("Owen Hunt", "Teddy Altman", "Allison Hunt", 15, 25),
+        # Leo is fostered by Owen alone at 14x20; Teddy does not learn he exists
+        # until 15x08 and is not co-parenting until later. One date for both
+        # would have to be wrong for one of them.
+        ("Owen Hunt", None, "Leo Hunt", 14, 20),
+        ("Teddy Altman", None, "Leo Hunt", 16, 1),
+        ("April Kepner", "Jackson Avery", "Harriet Avery", 12, 24),
+        # Born and died within the episode. Kept for the same reason
+        # Christopher Shepherd is kept -- both are in their parents' children
+        # lists, and a rule that admits one has to admit the other.
+        ("April Kepner", "Jackson Avery", "Samuel Avery", 11, 11),
+        ("Miranda Bailey", "Tucker Jones", "Tuck Jones", 2, 17),
+        ("Miranda Bailey", "Ben Warren", "Joey Warren", 16, 13),
+        ("Richard Webber", "Ellis Grey", "Maggie Pierce", 10, 24),
+        ("Ellis Grey", "Thatcher Grey", "Meredith Grey", 1, 1),
+        ("Thatcher Grey", "Susan Grey", "Molly Grey", 3, 10),
+        # Susan is on Lexie's parents line and was already a node -- this edge
+        # was simply absent.
+        ("Thatcher Grey", "Susan Grey", "Lexie Grey", 3, 1),
+        # Dated to the reveal: Jackson debuts in S6, but S8 is where the
+        # parentage is stated.
+        ("Catherine Fox", None, "Jackson Avery", 8, 5),
+        # Megan adopts Farouk alone. Riggs has no children field at all on his
+        # page; flying the boy out of Iraq is not parenthood.
+        ("Megan Hunt", None, "Farouk Hunt", 14, 1),
     ]
 
     edges: List[Tuple] = []
@@ -538,8 +559,15 @@ def _pp_parent_edges() -> List[Tuple]:
         ("Cooper Freedman", "Charlotte King", "Georgia Freedman", 6, 8),
         ("Cooper Freedman", "Charlotte King", "Caroline Freedman", 6, 12),
         ("Cooper Freedman", "Charlotte King", "Rachel Freedman", 6, 12),
-        ("Dell Parker", "Heather Parker", "Betsey Parker", 1, 1),
-        ("Addison Montgomery", "Jake Reilly", "Henry Montgomery", 5, 22),
+        ("Cooper Freedman", None, "Mason Warner", 5, 3),
+        ("Dell Parker", "Heather Parker", "Betsey Parker", 2, 6),
+        # Naomi raises Betsey after Dell dies.
+        ("Naomi Bennett", None, "Betsey Parker", 4, 1),
+        # Addison adopts Henry alone at 5x18; Jake becomes his father the
+        # following season, formalised at 6x12.
+        ("Addison Montgomery", None, "Henry Montgomery", 5, 18),
+        ("Jake Reilly", None, "Henry Montgomery", 6, 12),
+        ("Jake Reilly", None, "Angela Reilly", 5, 17),
         ("Amelia Shepherd", "Ryan Kerrigan", "Christopher Shepherd", 5, 22),
         ("The Captain Montgomery", None, "Addison Montgomery", 3, 9),
         ("The Captain Montgomery", None, "Archer Montgomery", 3, 9),
@@ -556,9 +584,13 @@ def _s19_parent_edges() -> List[Tuple]:
     """(parent_a, parent_b, child, season, episode) in STATION 19 seasons."""
     pairs = [
         ("Dean Miller", "JJ Lau", "Pru Miller-Warren", 3, 6),
+        # Ben and Bailey take Pru in after Dean dies; they sign at 5x17.
+        ("Ben Warren", "Miranda Bailey", "Pru Miller-Warren", 5, 17),
         ("Pruitt Herrera", None, "Andy Herrera", 1, 5),
         ("Maya Bishop", "Carina DeLuca", "Liam DeLuca-Bishop", 7, 2),
-        ("Michael Dixon", "Kitty Dixon", "Emmett Dixon", 3, 4),
+        ("Maya Bishop", "Carina DeLuca", "Andrea DeLuca-Bishop", 7, 10),
+        ("Maya Bishop", "Carina DeLuca", "Gianna DeLuca-Bishop", 7, 10),
+        ("Michael Dixon", "Kitty Dixon", "Emmett Dixon", 3, 7),
     ]
     edges: List[Tuple] = []
     for parent_a, parent_b, child, season, episode in pairs:
