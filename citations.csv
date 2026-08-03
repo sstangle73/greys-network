@@ -1,13 +1,13 @@
 Source,Target,Citation,Confidence,Note
 Meredith Grey,Nathan Riggs,12x23 At Last,cited,First encounter cited on the event sentence; couple only from 13x20
-Meredith Grey,Cormac Hayes,,uncited,"18x01 was a false anchor -- that scene is a phone call about the Minnesota job. The romance happens off screen between seasons; 18x03 trivia only speculates he visited"
+Meredith Grey,Cormac Hayes,18x01,cited,"Off screen between 17x17 and 18x01 and already over when 18x01 reports it -- she says she was seeing someone and it ended, takes his call about Austin, and he tells Bailey he stopped dating for his son. 18x09 was his resignation, not a breakup"
 Meredith Grey,Nick Marsh,18x01;18x02;18x05,cited,Met 14x17 but nothing happened then
 Meredith Grey,Andrew DeLuca,15x01;16x21,cited,Drunken kiss at the S14 finale wedding was rejected
 Meredith Grey,William Thorpe,12x13;12x16,cited,Sex on the third date
 Meredith Grey,Derek Shepherd,1x01;7x20,cited,
 Meredith Grey,Finn Dandridge,,inferred,No episode citation; S2-S3 arc is unambiguous in prose
 Meredith Grey,George O'Malley,2x12,cited,The crying incident
-Meredith Grey,Steve Murphy,,inferred,"Prose calls him one of Meredith's many one-night-stands"
+Meredith Grey,Steve Murphy,,inferred,Prose calls him one of Meredith's many one-night-stands
 Derek Shepherd,Addison Montgomery,1x09;3x01,cited,Married 1994; dated to her arrival per the pre-series convention
 Derek Shepherd,Rose,,inferred,Scalpel incident places the end in S5
 Addison Montgomery,Mark Sloan,,inferred,No code either way; 60-day pact runs through S3
@@ -17,7 +17,7 @@ Alex Karev,Jo Wilson,14x24 All of Me,cited,Ferryboat wedding officiated by Mered
 Alex Karev,Callie Torres,6x13,cited,Revealed at Lecture Day
 Alex Karev,Laurel Pinson,7x12,cited,Resolves a CLAUDE.md known-uncertain entry
 Alex Karev,Izzie Stevens,5x22,cited,
-Alex Karev,Olivia Harper,,inferred,Syphilis storyline; no code found, S2 retained as the later reading
+Alex Karev,Olivia Harper,,inferred,"Syphilis storyline; no code found, S2 retained as the later reading"
 Alex Karev,Rebecca Pope,,inferred,Ferry accident S3; relationship proper is S4
 Mark Sloan,Teddy Altman,6x22,cited,Ended when Teddy found Reed in his bed
 Mark Sloan,Lexie Grey,8x24,cited,Ends with the plane crash
@@ -33,12 +33,12 @@ Arizona Robbins,Carina DeLuca,,inferred,S14; Arizona leaves at the finale
 George O'Malley,Izzie Stevens,3x25,cited,Drunken night S3; they tried being a couple in S4 and broke up over chemistry
 Izzie Stevens,Denny Duquette,2x27,cited,
 Cristina Yang,Preston Burke,2x03;2x05;2x24,cited,Left at the altar 3x25
-Cristina Yang,Colin Marlow,,convention,Relationship was pre-series at Stanford; dated to his S2 appearance
+Cristina Yang,Colin Marlow,3x18;3x20,cited,"Was dated to a season 2 appearance that does not exist -- Marlow is in exactly three episodes, all season 3. Pre-series at Stanford, revealed at 3x18 (Burke: they were together three years), he leaves Seattle at 3x20"
 Cristina Yang,Shane Ross,,cited,Ended when he went crazy in the OR
 Cristina Yang,Darren Parker,9x03;9x04,cited,The Minnesota arc
 Owen Hunt,Cristina Yang,5x06;5x19;7x20;9x01,cited,
 Owen Hunt,Teddy Altman,15x01;17x17,cited,
-Owen Hunt,Amelia Shepherd,12x01;15x01,cited,
+Owen Hunt,Amelia Shepherd,12x01;15x16,cited,"End was on the episode-1 placeholder; 15x16 is the spoken end, and they are still not finished at 15x15"
 Owen Hunt,Emma Marling,10x04;10x05;10x08,cited,Owen's own page carries no codes; dated from three other pages
 Owen Hunt,Nora,21x13 Put It to the Test,cited,From episode recaps; the wiki has no S21 prose for Owen
 Owen Hunt,Carina DeLuca,14x06;14x07;14x12,cited,Was recorded as S15 before the audit
@@ -73,11 +73,11 @@ Maggie Pierce,Winston Ndugu,16x19;17x17;19x19,cited,Married at the beach in 17x1
 Maggie Pierce,Ethan Boyd,,uncited,"Entire subsection is uncited; past tense by 12x03, so S11-S12"
 Maggie Pierce,Dean,11x10,cited,Pre-Seattle relationship narrated at 11x10
 Miranda Bailey,Ben Warren,6x14;6x22;9x10,cited,Wedding 9x10; was recorded as S10 before the audit
-Miranda Bailey,Tucker Jones,6x14;6x22,cited,Divorce finalised by 6x14; was recorded as S7 before the audit
+Miranda Bailey,Tucker Jones,2x05;6x14;6x22,cited,2x05 is where Bailey tells Derek the man at the glass is her husband of ten years; season 1 never mentions the marriage. Divorce finalised by 6x14; was recorded as S7 before the audit
 Miranda Bailey,Eli Lloyd,8x04;8x05,cited,Start season is inference; end is cited
 Richard Webber,Catherine Fox,8x23;11x24;16x22,cited,
 Richard Webber,Ellis Grey,3x08;3x14,cited,Ended when Richard recommitted to his marriage
-Richard Webber,Adele Webber,9x10,cited,Death cited; the S1 start has no citation in the cache
+Richard Webber,Adele Webber,2x02;9x10,cited,"2x02 is Adele's first appearance, walking in after Derek calls her to get Richard discharged. The name Adele appears in no season 1 episode page"
 Thatcher Grey,Susan Grey,2x22;3x23,cited,
 Thatcher Grey,Danielle,7x14 P.Y.T.,cited,
 Ellis Grey,Thatcher Grey,2x18 Yesterday,convention,Pre-series marriage dated to Thatcher's first appearance
@@ -87,9 +87,9 @@ Nico Kim,Jason Shaheen,20x03,cited,Relationship began off-screen before the reve
 Taryn Helm,Mika Yasuda,19x09;20x02;20x09,cited,Was recorded as S20-S21 before the audit
 Jules Millin,Mika Yasuda,21x01;21x08;21x10,cited,
 Benson Kwan,Jules Millin,19x03,cited,Explicitly one-time
-Benson Kwan,Molly Tran,21x02,cited,Engaged but never married; whole arc narrated in 21x02
+Benson Kwan,Molly Tran,21x02;21x13,cited,"Engaged but never married; arc narrated in 21x02 and the breakup is on screen at 21x13, after which she does not appear"
 Winston Ndugu,Monica Beltran,21x05,cited,Slept together at the end of S20; awkward reunion at 21x05
-Simone Griffith,Lucas Adams,19x09;21x17,cited,
+Simone Griffith,Lucas Adams,19x09;21x17;22x01,cited,"21x17 is a breakup they reconcile from in the season 21 finale, so the end is 22x01"
 Lucas Adams,Cara Ford,19x10,cited,One sentence of evidence
 Addison Montgomery,Kevin Nelson,2x04 PP;2x13 PP,cited,S1 is meeting only; he stood her up at 2x01
 Addison Montgomery,Pete Wilder,3x20 PP;3x23 PP,inferred,Relationship start has no citation; bounded by Violet's return
@@ -109,7 +109,7 @@ Sheldon Wallace,Laura Wallace,5x21 PP;6x01 PP;6x09 PP,cited,Divorced pre-series;
 Sheldon Wallace,Miranda,6x09 PP;6x13 PP,cited,
 Sam Bennett,Naomi Bennett,1x07 PP;6x13 PP,cited,Married and divorced pre-series; remarried in the finale
 Sam Bennett,Sonya Nichols,2x12 PP,cited,End has no citation
-Sam Bennett,Stephanie Kemp,6x13 PP,inferred,Left her for Naomi at the wedding
+Sam Bennett,Stephanie Kemp,6x01 PP;6x13 PP,cited,Upgraded from inferred: PP 6x01 shows them together outright -- breakfast in his bedroom and a kiss in the lobby. Left her for Naomi at the wedding
 Naomi Bennett,Archer Montgomery,2x07 PP;2x17 PP;4x14 PP,cited,
 Naomi Bennett,William White,3x14 PP;3x23 PP;4x01 PP,cited,
 Naomi Bennett,Gabriel Fife,4x22 PP;6x13 PP,cited,Engaged 4x22; separation revealed at 6x13

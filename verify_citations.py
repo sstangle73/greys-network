@@ -124,6 +124,16 @@ def main(strict=False):
                 text = open(path, encoding="utf-8").read()
                 body = re.search(r"==\s*Full Summary\s*==(.+?)(?=\n==[^=])", text, re.S)
                 body = body.group(1) if body else text
+                # The summary calls people what they are CALLED on screen, and a
+                # character can appear without ever being named aloud. Bailey's
+                # husband is credited "[[Tucker Jones|Bailey's Husband]]" and the
+                # summary only ever says "her husband" -- so the strongest proof
+                # he is in the episode sits in the cast list, which this was not
+                # reading. That is not a laxer test: the question being asked is
+                # whether the person is in the episode, and a credit answers it
+                # more directly than the prose does.
+                cast = re.search(r"\n==\s*Cast\s*==(.+?)(?=\n==[^=])", text, re.S)
+                cast = cast.group(1) if cast else ""
                 checked += 1
                 # A page with no real summary cannot support OR refute a
                 # citation. That is a gap in the source, not an error in the
@@ -133,7 +143,7 @@ def main(strict=False):
                                  f"{show} {season}x{ep:02d} ({page['Title']})")
                     continue
                 missing = [p for p in (row["Source"], row["Target"])
-                           if not mentions(body, p)]
+                           if not mentions(body, p) and not mentions(cast, p)]
                 if missing:
                     unsupported += 1
                     problems.append(

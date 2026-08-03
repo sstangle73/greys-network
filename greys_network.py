@@ -209,9 +209,9 @@ WEDDINGS = {
     frozenset({"April Kepner", "Jackson Avery"}): (10, 1),
     frozenset({"April Kepner", "Matthew Taylor"}): (14, 1),
     frozenset({"Maggie Pierce", "Winston Ndugu"}): (17, 1),
-    frozenset({"Miranda Bailey", "Tucker Jones"}): (1, 1),
+    frozenset({"Miranda Bailey", "Tucker Jones"}): (2, 5),
     frozenset({"Miranda Bailey", "Ben Warren"}): (9, 1),
-    frozenset({"Richard Webber", "Adele Webber"}): (1, 1),
+    frozenset({"Richard Webber", "Adele Webber"}): (2, 2),
     frozenset({"Richard Webber", "Catherine Fox"}): (11, 1),
     frozenset({"Ellis Grey", "Thatcher Grey"}): (2, 18),
     frozenset({"Thatcher Grey", "Susan Grey"}): (2, 1),
@@ -239,7 +239,7 @@ DIVORCES = {
     frozenset({"Izzie Stevens", "Alex Karev"}): (6, 21),
     frozenset({"Alex Karev", "Jo Wilson"}): (16, 1),
     frozenset({"Owen Hunt", "Cristina Yang"}): (9, 10),
-    frozenset({"Amelia Shepherd", "Owen Hunt"}): (15, 1),
+    frozenset({"Amelia Shepherd", "Owen Hunt"}): (15, 16),
     frozenset({"Owen Hunt", "Teddy Altman"}): (22, 12),
     frozenset({"April Kepner", "Jackson Avery"}): (12, 1),
     frozenset({"Maggie Pierce", "Winston Ndugu"}): (19, 1),
@@ -268,7 +268,12 @@ def _romantic_edges() -> List[Tuple]:
         ("Meredith Grey", "William Thorpe", "Dating", (12, 13), (12, 16)),
         ("Meredith Grey", "Nathan Riggs", "Dating", (12, 23), (14, 5)),
         ("Meredith Grey", "Andrew DeLuca", "Dating", (15, 13), (16, 14)),
-        ("Meredith Grey", "Cormac Hayes", "Dating", (18, 1), (18, 9)),
+        # Entirely off screen between 17x17 and 18x01, and already over when
+        # 18x01 reports it: Meredith says "I was seeing someone... it ended",
+        # she takes his call about Austin, and Cormac tells Bailey he stopped
+        # dating for his son. One episode is the whole visible span. 18x09 was
+        # his resignation, which is not the same event.
+        ("Meredith Grey", "Cormac Hayes", "Dating", (18, 1), (18, 1)),
         ("Meredith Grey", "Nick Marsh", "Dating", (18, 2), None),
 
         # --- Derek / Addison / Mark ------------------------------------------
@@ -314,14 +319,21 @@ def _romantic_edges() -> List[Tuple]:
         ("Jo Wilson", "Paul Stadler", "Married", (13, 12), (14, 10)),
         ("Jo Wilson", "Levi Schmitt", "Fling", (14, 1), (14, 1)),
         ("Jo Wilson", "Todd Eames", "Dating", (18, 13), (18, 19)),
-        ("Jo Wilson", "Chris Cleaver", "Dating", (14, 15), (14, 1)),
+        # Whole relationship is one 2003 flashback inside 14x15; it is the only
+        # episode in the cache that mentions Cleaver at all.
+        ("Jo Wilson", "Chris Cleaver", "Dating", (14, 15), (14, 15)),
         ("Jo Wilson", "Atticus Lincoln", "Married", (18, 9), None),
-        ("Atticus Lincoln", "Amelia Shepherd", "Dating", (15, 17), (18, 1)),
+        # They break up at 18x01 but reconnect at 18x06, so the real end is the
+        # 18x09 confrontation. Both are on screen; this is the later one.
+        ("Atticus Lincoln", "Amelia Shepherd", "Dating", (15, 17), (18, 9)),
 
         # --- Amelia / Owen / Teddy / Cristina ---------------------------------
-        ("Amelia Shepherd", "Owen Hunt", "Married", (11, 17), (15, 1)),
+        # 15x16 is the spoken end. 15x15 has the fight, but they are not done
+        # there, so the later of the two candidates is also the correct one.
+        ("Amelia Shepherd", "Owen Hunt", "Married", (11, 17), (15, 16)),
         ("Amelia Shepherd", "Tom Koracick", "Fling", (14, 6), (14, 6)),
-        ("Amelia Shepherd", "Kai Bartley", "Dating", (18, 8), (19, 1)),
+        # 19x15's own scene table names the beat: "Kai and Amelia break up."
+        ("Amelia Shepherd", "Kai Bartley", "Dating", (18, 8), (19, 15)),
         ("Amelia Shepherd", "Toni Wright", "Dating", (22, 11), (22, 18)),
         ("Owen Hunt", "Beth Whitman", "Dating", (5, 15), (5, 15)),
         ("Owen Hunt", "Cristina Yang", "Married", (5, 6), (9, 10)),
@@ -333,7 +345,11 @@ def _romantic_edges() -> List[Tuple]:
         ("Teddy Altman", "Andrew Perkins", "Dating", (7, 1), (7, 22)),
         ("Teddy Altman", "Tom Koracick", "Dating", (15, 12), (17, 7)),
         ("Teddy Altman", "Cass Beckman", "Dating", (21, 6), None),
-        ("Cristina Yang", "Colin Marlow", "Dating", (2, 1), (2, 1)),
+        # Season 2 was wrong: Marlow is absent from every season 2 episode and
+        # appears in exactly three, 3x18-3x20. The romance is pre-series and
+        # already over, so 3x18 is where a viewer first learns of it (Burke:
+        # "they were together for three years") and 3x20 is where he leaves.
+        ("Cristina Yang", "Colin Marlow", "Dating", (3, 18), (3, 20)),
         ("Cristina Yang", "Preston Burke", "Dating", (2, 3), (3, 25)),
         ("Cristina Yang", "Shane Ross", "Fling", (10, 10), (10, 12)),
         ("Cristina Yang", "Darren Parker", "Fling", (9, 3), (9, 1)),
@@ -351,20 +367,30 @@ def _romantic_edges() -> List[Tuple]:
         ("Jackson Avery", "Maggie Pierce", "Dating", (14, 14), (16, 1)),
         ("Jackson Avery", "Victoria Hughes", "Dating", (16, 3), (16, 17)),
         ("Maggie Pierce", "Ethan Boyd", "Dating", (11, 15), (12, 3)),
-        ("Maggie Pierce", "Dean", "Dating", (11, 10), (11, 1)),
+        # Dean never appears. Start, proposal and end are one retrospective
+        # monologue in 11x10, so the visible span is that single episode.
+        ("Maggie Pierce", "Dean", "Dating", (11, 10), (11, 10)),
         ("Maggie Pierce", "Andrew DeLuca", "Dating", (12, 3), (12, 16)),
         ("Maggie Pierce", "Clive Johnson", "Dating", (14, 9), (14, 14)),
         ("Maggie Pierce", "Winston Ndugu", "Married", (16, 19), (19, 20)),
         ("Andrew DeLuca", "Sam Bello", "Dating", (14, 7), (14, 19)),
 
         # --- Bailey / Webber / the older generation ---------------------------
-        ("Miranda Bailey", "Tucker Jones", "Married", (1, 1), (6, 10)),
+        # 2x05: Tucker knocks on the glass, Derek asks if he is her date, and
+        # Bailey says he is her husband of ten years. Season 1 never mentions
+        # it -- the old date showed this marriage ~18 episodes early.
+        ("Miranda Bailey", "Tucker Jones", "Married", (2, 5), (6, 10)),
         ("Miranda Bailey", "Eli Lloyd", "Dating", (7, 10), (8, 5)),
         ("Miranda Bailey", "Ben Warren", "Married", (6, 14), None),
-        ("Richard Webber", "Adele Webber", "Married", (1, 1), (9, 10)),
+        # 2x02: Derek calls Richard's wife to get him discharged and Adele
+        # walks in. She is not named or mentioned anywhere in season 1.
+        ("Richard Webber", "Adele Webber", "Married", (2, 2), (9, 10)),
         ("Richard Webber", "Ellis Grey", "Fling", (2, 15), (3, 17)),
         ("Richard Webber", "Catherine Fox", "Married", (8, 23), None),
-        ("Ellis Grey", "Thatcher Grey", "Married", (2, 18), (2, 1)),
+        # The divorce predates the series by ~20 years and is only ever narrated.
+        # 2x18 already carries the Outcome, and it is the same episode the
+        # marriage is first revealed in -- so the visible span is one episode.
+        ("Ellis Grey", "Thatcher Grey", "Married", (2, 18), (2, 18)),
         ("Thatcher Grey", "Susan Grey", "Married", (2, 22), (3, 23)),
         ("Thatcher Grey", "Danielle", "Dating", (7, 14), (7, 1)),
 
@@ -377,7 +403,8 @@ def _romantic_edges() -> List[Tuple]:
         ("Nico Kim", "Jason Shaheen", "Dating", (20, 3), None),
         ("Atticus Lincoln", "Jules Millin", "Fling", (19, 1), (19, 1)),
         ("Jules Millin", "Mika Yasuda", "Dating", (21, 1), (21, 8)),
-        ("Benson Kwan", "Molly Tran", "Dating", (21, 2), (21, 1)),
+        # On-screen breakup in 21x13; she does not appear again.
+        ("Benson Kwan", "Molly Tran", "Dating", (21, 2), (21, 13)),
         ("Lucas Adams", "Cara Ford", "Fling", (19, 10), (19, 1)),
         ("Lucas Adams", "Dani Spencer", "Fling", (22, 16), (22, 16)),
         ("Simone Griffith", "Trey Delgado", "Dating", (19, 9), (19, 20)),
@@ -624,6 +651,35 @@ def _episode_is_known() -> List[dict]:
         {"Source": "Jo Wilson", "Target": "Levi Schmitt"},
         # The bath scene that starts the real relationship, PP 4x01.
         {"Source": "Addison Montgomery", "Target": "Sam Bennett"},
+        # Breakfast in bed and a kiss in the lobby, PP 6x01.
+        {"Source": "Sam Bennett", "Target": "Stephanie Kemp"},
+        # 18x01 is where the viewer is told it happened -- see the edge.
+        {"Source": "Meredith Grey", "Target": "Cormac Hayes"},
+    ]
+
+
+def _end_episode_is_known() -> List[dict]:
+    """Pairs that really do end in episode 1, rather than lacking an end episode.
+
+    The mirror of _episode_is_known(), and it exists for the same reason: a `1`
+    in the end column meant both "ended in the premiere" and "we do not know".
+    The default is the safe reading -- hold the tie on screen to the season's
+    close -- but that silently hid five ties whose placeholder happened to be
+    correct, and no amount of reading the data could tell them apart.
+    """
+    return [
+        # Jackson tells Catherine at 16x09 he "broke up with Maggie months ago";
+        # the break itself is in the 16x01 time jump.
+        {"Source": "Jackson Avery", "Target": "Maggie Pierce"},
+        # Megan says out loud at 18x01 that she and Riggs split; he is off screen
+        # with his NGO and never appears again.
+        {"Source": "Nathan Riggs", "Target": "Megan Hunt"},
+        # Ends with Pete's death, PP 6x01.
+        {"Source": "Violet Turner", "Target": "Pete Wilder"},
+        # Maya ends it in the S19 season 3 opener; 3x02 confirms it stuck.
+        {"Source": "Maya Bishop", "Target": "Jack Gibson"},
+        # Simone turns down getting back together in the 22x01 opener.
+        {"Source": "Simone Griffith", "Target": "Lucas Adams"},
     ]
 
 
@@ -722,9 +778,12 @@ def build_edges() -> pd.DataFrame:
     #
     # This matters more than it sounds: Derek and Addison divorce late in season
     # 3, and an end on 3x01 told a viewer the outcome twenty episodes early.
+    end_known = {frozenset({r["Source"], r["Target"]})
+                 for r in _end_episode_is_known()}
     df["End_Episode_Known"] = [
         1 if (row.Last_Season == ""
               or int(row.Last_Episode or 1) > 1
+              or frozenset({row.Source, row.Target}) in end_known
               # A fling that begins and ends in one episode has a real end.
               or (row.First_Season == row.Last_Season
                   and row.First_Episode == row.Last_Episode)) else 0
@@ -833,6 +892,33 @@ def validate(edges: pd.DataFrame, nodes: pd.DataFrame) -> None:
     ]
     assert not backwards, ("A relationship ends before it starts, within a season:\n  "
                            + "\n  ".join(backwards))
+
+    # The check above deliberately skips unknown end episodes -- but skipping them
+    # left a whole class of tie invisible. An unknown START is held to its
+    # season's CLOSE, so a tie with an unknown start that also ends inside that
+    # same season renders as beginning after it has already finished: it never
+    # appears as a live relationship at any cutoff, only ever as a past one.
+    #
+    # Three ties were in this state and nothing complained, because each half of
+    # the pair is individually reasonable and only the combination is broken.
+    # So compare the dates the CHART will actually draw, not the ones stored.
+    def rendered(season, episode, known, show):
+        return (int(season), int(episode) if known else SHOWS[show]["episodes"])
+
+    unreachable = []
+    for r in ends.itertuples():
+        start = rendered(r.First_Season, r.First_Episode, r.Episode_Known, r.Show)
+        stop = rendered(r.Last_Season, r.Last_Episode, r.End_Episode_Known, r.Show)
+        # Equality is fine: a one-episode fling legitimately starts and ends in
+        # the same place. Only a strictly backwards span is unreachable.
+        if stop < start:
+            unreachable.append(
+                f"{r.Source} & {r.Target} ({r.Show}) renders "
+                f"{start[0]}x{start[1]:02d} -> {stop[0]}x{stop[1]:02d}"
+                f"{'  [start episode unknown]' if not r.Episode_Known else ''}")
+    assert not unreachable, (
+        "Tie(s) that can never render as an active relationship -- the start is "
+        "held past the end:\n  " + "\n  ".join(unreachable))
 
     allowed = {"Married", "Dating", "Fling", "Parent"}
     bad = set(edges["Relationship_Type"]) - allowed

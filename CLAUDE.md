@@ -74,10 +74,35 @@ Last_Season/Episode     when it ended (blank = still together)
 Reveals                 what OTHER shows showed, e.g. "GA:16x14:Dating"
 ```
 
-**Episode precision is per-tie, and `Episode_Known` says which.** 132 of 162
-romantic ties carry a real episode, read off the prose by hand. The other 30 are
-flagged `Episode_Known=0`, and the chart holds those until their whole season has
-been watched.
+**Episode precision is per-tie, and `Episode_Known` says which.** All 158
+romantic ties now carry a real start episode, and all but 2 carry a real end.
+Anything still flagged `Episode_Known=0` is held back until its whole season has
+been watched, which is the late end.
+
+**Anchor a tie to the episode the viewer is shown or told about it — never to an
+inferred origin.** This is the rule that closed the last of the unknowns, and it
+sounds like it violates the date-late rule until you see why it cannot:
+
+- An *inferred* start ("this probably began around here") can land before the
+  viewer watched it. That is the unrecoverable direction.
+- An *introduction* cannot. If `2x05` is where Bailey tells Derek the man at the
+  glass is her husband, then dating the marriage `2x05` reveals nothing a viewer
+  at `2x05` has not just seen.
+
+So the anchor is the first sighting, not the first guess. Under Dana's scope
+rule a tie cannot qualify without screen time, so a sighting almost always
+exists — and where it doesn't, the season-close fallback stays.
+
+Read the other way, the rule is a smell test: **a relationship whose start you
+cannot anchor to any episode is a relationship you should check actually
+happened on screen.** Three of the five last unknowns turned out to be dated to
+the wrong season, and one was dated to a season the character never appears in.
+
+`_end_episode_is_known()` is the mirror of `_episode_is_known()` and exists for
+the same reason. Five ties genuinely did end in an episode 1 and were being
+held to their season's close, because a `1` in the end column meant both "ended
+in the premiere" and "we don't know" — and no amount of reading the data could
+separate them.
 
 That flag exists because `First_Episode: 1` used to mean two different things —
 "the pilot" and "we have no idea" — and episode 1 is the *earliest* point in a
@@ -121,6 +146,13 @@ Nodes carry `Death_Season`/`Death_Episode`, so status is also point-in-time.
 - Every `Married` tie needs a wedding date
 - Every `Divorced` outcome needs a matching `Married` edge
 - Timeline is monotonic: nothing appears then vanishes as you watch forward
+- **No tie renders as starting after it ends.** Compares the dates the chart will
+  actually *draw*, not the ones stored, because the two differ whenever an
+  episode is unknown. An unknown start is held to its season's close, so a tie
+  with an unknown start that also ended inside that same season could never
+  appear as a live relationship at any cutoff — only ever as a past one. Three
+  ties were in that state and nothing complained, because each half is
+  individually reasonable and only the combination is broken.
 
 ## Parent edges: three conventions, not one
 
@@ -167,8 +199,9 @@ here, since nobody says "we are now dating" on camera.
 
 ## Current task
 
-The audit is complete: **all 162 romantic ties across the three shows are
-source-checked**, and `audit_tracker.csv` has no unverified rows left.
+The audit is complete: **all 158 romantic ties across the three shows are
+source-checked**, `audit_tracker.csv` has no unverified rows left, and every tie
+carries a real start episode.
 
 Where the remaining risk actually sits, for whoever picks this up:
 
@@ -176,9 +209,21 @@ Where the remaining risk actually sits, for whoever picks this up:
   is asserted in three infoboxes and Sullivan's own "Romance with Natasha"
   heading is an empty stub. Dated to their last appearance (S19 7x10) under the
   date-late rule. This is the least defensible date in the dataset.
-- **Several pre-series marriages are dated to a first on-screen appearance**,
-  per the convention above — Ellis & Thatcher, Richard & Adele, Sheldon &
-  Laura, Michael & Kitty Dixon. That is a convention, not a fact.
+- **Pre-series relationships are dated to their first sighting**, per the rule
+  above — Ellis & Thatcher, Richard & Adele, Bailey & Tucker, Sheldon & Laura,
+  Michael & Kitty Dixon, Cristina & Colin Marlow. That is a convention, not a
+  fact: it is when the viewer learns, not when it happened.
+- **Four ties are visible for exactly one episode**, and that is correct rather
+  than a degenerate span. Meredith & Hayes, Maggie & Dean, Jo & Chris Cleaver
+  and Ellis & Thatcher are each revealed and closed inside a single hour — the
+  relationship is narrated in the past tense the only time it is ever mentioned.
+  There is no cutoff at which a viewer would think these couples are together,
+  so they only ever draw under "show past ties". Don't "fix" them.
+- **The two ties still lacking an end episode** are Thatcher & Danielle (she
+  appears once, and nothing ever ends it) and Naomi & William White (his death
+  is never dated anywhere in the cache). Both hold to their season's close,
+  which is the safe reading. Ending them would assert a breakup that no episode
+  shows.
 - **Deliberately excluded**, all for the same reason — a partner who never
   appears in a present-day storyline: Koracick's Dana Hamilton, Teddy's Allison
   Brown, Travis's Michael Williams, Sullivan's Claire, Pete's Anna Wilder.
