@@ -340,14 +340,23 @@ the reason attached — `EXCLUDED` in `wiki_harvest.py`. Delete a line there and
 that tie comes back as new, which is what you want if you have changed your
 mind about it. Nothing is dropped silently; the counts are always printed.
 
-**The cache needs `when: always`, and this is not optional.** GitLab's
-`cache:when` defaults to `on_success`, and this job exists to *fail*. The
-snapshot was being thrown away on exactly the runs that produced it, so every
-run would have looked like a first run and the alert would have fired every
-week forever — the precise thing the snapshot was added to prevent. It was
-found by running the schedule once rather than trusting it, which is the only
-way this class of bug shows up: everything passes locally, because locally
-nothing fails.
+**The baseline is a committed file, `drift_baseline.json`.** The first attempt
+kept it in the CI cache, and that does not work here: the self-hosted runner
+uses the docker executor with a local cache volume, and two consecutive
+scheduled runs showed one creating the cache and the next reporting *"cache
+file does not exist"*. `cache: when: always` is still set — this job exists to
+fail, and without it the harvested pages get re-downloaded from a free,
+volunteer-run wiki every alerting run — but correctness no longer rests on it.
+
+Committing it is the better design anyway, for a reason unrelated to
+reliability: reviewing wiki drift is a judgement call, and a judgement call
+belongs in a diff. Clearing the alert is an explicit act —
+`python wiki_harvest.py accept`, then commit — rather than a side effect of a
+job having run. **Nothing in CI writes it.** A job that could silence its own
+alarm would make the alarm meaningless.
+
+This whole class of bug only appears when you *run* the thing: everything
+passed locally, because locally nothing fails.
 
 A scheduled run also rebuilds and redeploys the site. That is intentional — it
 refreshes the portrait cache — and a drift failure does not block it, because

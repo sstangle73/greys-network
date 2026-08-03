@@ -108,11 +108,12 @@ drift:
     key: wikicache-v1
     paths:
       - wikicache/
-    # THIS JOB EXISTS TO FAIL. cache:when defaults to on_success, so the drift
-    # snapshot inside wikicache/ was being thrown away on exactly the runs that
-    # produced it -- every run would have looked like a first run, and the
-    # "only alert when something moved" logic would have alerted every week
-    # forever. Caught by running the schedule once instead of trusting it.
+    # THIS JOB EXISTS TO FAIL, and cache:when defaults to on_success -- so
+    # without this the harvested pages are re-downloaded from a free,
+    # volunteer-run wiki on every alerting run. The cache is courtesy only:
+    # the drift baseline is a COMMITTED file, because this runner's docker
+    # executor was observed creating a cache one run and reporting "cache file
+    # does not exist" the next. Correctness does not depend on it.
     when: always
   before_script:
     - pip install --quiet pandas

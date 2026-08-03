@@ -11,6 +11,8 @@ fandom.com, which the chat sandbox does not have.
     python wiki_harvest.py harvest          # download wikitext -> ./wikicache
     python wiki_harvest.py parse            # wikicache -> candidate_edges.csv
     python wiki_harvest.py diff             # candidate_edges.csv vs edges.csv
+    python wiki_harvest.py drift            # scheduled check; fails if the wiki moved
+    python wiki_harvest.py accept           # record the wiki as reviewed, then COMMIT
 
 WHY WIKITEXT AND NOT HTML
     action=raw returns the source, where the infobox is already structured:
@@ -76,7 +78,9 @@ SEEDS_BY_SHOW = {
         "Andy Herrera", "Robert Sullivan", "Maya Bishop", "Jack Gibson",
         "Victoria Hughes", "Travis Montgomery", "Dean Miller", "Pruitt Herrera",
         "Theo Ruiz", "Emmett Dixon", "Natasha Ross", "Sean Beckett",
-        "Michael Dixon", "Vasquez",
+        # "Vasquez" 404s -- the page is her full name, and the seed had been
+        # failing on every harvest since it was written.
+        "Michael Dixon", "Eva Vasquez",
     ],
 }
 
@@ -399,7 +403,20 @@ def diff(edges_path="edges.csv") -> None:
         print(f"  ~ {' & '.join(sorted(k))}: ours={ours} wiki={guess}")
 
 
-STATE = os.path.join(CACHE, "drift_state.json")
+# Committed to the repo, NOT kept in the CI cache.
+#
+# The first attempt put this in wikicache/ and let CI's cache carry it between
+# pipelines. It does not: the self-hosted runner uses the docker executor with
+# a local cache volume, so a run can create the cache and the next run can be
+# told "cache file does not exist". Two consecutive scheduled runs proved it.
+#
+# Committing it is better than making the cache work, for a reason that has
+# nothing to do with reliability: reviewing wiki drift is a judgement call, and
+# a judgement call belongs in a diff where someone can see it. Clearing the
+# alert is now an explicit act -- `python wiki_harvest.py accept`, then commit
+# the change -- rather than a side effect of a job having run. Still no token,
+# still no bot account.
+STATE = "drift_baseline.json"
 
 # Ties the wiki has, that this dataset leaves out ON PURPOSE. Without this the
 # first real run reported thirty-odd "candidates", most of them decisions that
@@ -525,8 +542,9 @@ def drift(edges_path="edges.csv", report="drift_report.md") -> int:
     elif prior:
         lines += ["Nothing changed on the wiki since the last run.", ""]
     else:
-        lines += ["_First run: no previous snapshot, so nothing to compare "
-                  "against yet. The next run will report changes._", ""]
+        lines += ["_No `drift_baseline.json` in the repo, so there is nothing "
+                  "to compare against. Run `python wiki_harvest.py accept` and "
+                  "commit the result to set the baseline._", ""]
 
     lines += ["## Standing candidates", ""]
     if not missing:
@@ -566,7 +584,6 @@ def drift(edges_path="edges.csv", report="drift_report.md") -> int:
                 lines.append(f"- {' & '.join(sorted(k))}")
             lines.append("")
 
-    _save_state(now)
     with open(report, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines))
     print("\n".join(lines))
@@ -574,14 +591,47 @@ def drift(edges_path="edges.csv", report="drift_report.md") -> int:
     # Fail only on genuine movement. A standing candidate that has already been
     # looked at and rejected must not fail every scheduled run forever -- an
     # alert that always fires is one nobody reads.
+    if prior and not (fresh or retyped or gone):
+        return 0
     if prior:
-        return 1 if (fresh or retyped or gone) else 0
-    return 1 if missing else 0
+        print("\nReview the changes above. If they are all understood, run "
+              "`python wiki_harvest.py accept` and commit drift_baseline.json "
+              "to clear this. Nothing in CI can clear it -- a job that could "
+              "silence its own alarm would make the alarm meaningless.")
+    return 1
+
+
+def accept(edges_path="edges.csv") -> int:
+    """Record the wiki's current state as reviewed.
+
+    Run this after reading a drift report and deciding the changes are
+    understood, then commit drift_baseline.json. That commit is the record of
+    the decision -- which is the point. Nothing in CI writes this file; if a job
+    could clear its own alert, the alert would mean nothing.
+    """
+    harvest()
+    parse()
+    theirs = {}
+    with open("candidate_edges.csv", encoding="utf-8") as fh:
+        for row in csv.DictReader(fh):
+            key = frozenset({row["Subject"], row["Partner"]})
+            if key in EXCLUDED or _is_placeholder(key):
+                continue
+            theirs[_key(key)] = row["Type_Guess"]
+    before = _load_state()
+    _save_state(theirs)
+    added = len(set(theirs) - set(before))
+    removed = len(set(before) - set(theirs))
+    print(f"{STATE}: {len(theirs)} ties recorded "
+          f"(+{added} / -{removed} vs the previous baseline)")
+    print("Commit it -- that commit is the record that these were reviewed.")
+    return 0
 
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("command", choices=["harvest", "parse", "diff", "drift"])
+    ap.add_argument("command",
+                    choices=["harvest", "parse", "diff", "drift", "accept"])
     ap.add_argument("--edges", default="edges.csv")
     args = ap.parse_args()
 
@@ -591,5 +641,7 @@ if __name__ == "__main__":
         parse()
     elif args.command == "drift":
         sys.exit(drift(args.edges))
+    elif args.command == "accept":
+        sys.exit(accept(args.edges))
     else:
         diff(args.edges)
