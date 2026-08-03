@@ -44,8 +44,31 @@ if (!errors.length) {
     ['clear search',          () => { const s = doc.getElementById('search'); s.value = ''; fire(s, 'input'); }],
     ['toggle rail',           () => fire(doc.getElementById('rail-toggle'), 'click')],
     ['fit button',            () => fire(doc.getElementById('fit'), 'click')],
-    ['autocomplete populated',() => { const n = doc.querySelectorAll('#cast option').length;
-                                      if (!n) throw new Error('datalist empty'); }],
+    // Was a <datalist>, which Android Chrome renders full-screen over the whole
+    // page. It is a custom listbox now, so the assertion has to drive it: type,
+    // and check a capped list of real matches appears.
+    ['autocomplete suggests',  () => { const s = doc.getElementById('search');
+                                      s.value = 'mer'; fire(s, 'input');
+                                      const list = doc.getElementById('ac-search');
+                                      const opts = [...list.querySelectorAll('[role="option"]')];
+                                      if (list.hidden || !opts.length) throw new Error('no suggestions');
+                                      if (opts.length > 8) throw new Error(`uncapped: ${opts.length}`);
+                                      if (!opts.every(o => o.textContent.toLowerCase().includes('mer')))
+                                        throw new Error('a suggestion does not match');
+                                      if (s.getAttribute('aria-expanded') !== 'true')
+                                        throw new Error('aria-expanded not set'); }],
+    ['autocomplete picks',    () => { const s = doc.getElementById('search');
+                                      const first = doc.querySelector('#ac-search [role="option"]');
+                                      const name = first.textContent;
+                                      first.dispatchEvent(new window.Event('pointerdown', { bubbles: true }));
+                                      if (s.value !== name) throw new Error(`picked ${s.value}`);
+                                      if (!doc.getElementById('ac-search').hidden)
+                                        throw new Error('list stayed open'); }],
+    ['autocomplete closes',   () => { const s = doc.getElementById('search');
+                                      s.value = 'zzzz'; fire(s, 'input');
+                                      if (!doc.getElementById('ac-search').hidden)
+                                        throw new Error('open with no matches'); }],
+    ['clear search again',    () => { const s = doc.getElementById('search'); s.value = ''; fire(s, 'input'); }],
     ['search dims markers',   () => { const s2 = doc.getElementById('search'); s2.value='meredith'; fire(s2,'input');
                                       const dimmed = [...doc.querySelectorAll('.marker')].filter(m=>m.classList.contains('dimmed')).length;
                                       const lit = [...doc.querySelectorAll('.marker')].filter(m=>!m.classList.contains('dimmed')).length;

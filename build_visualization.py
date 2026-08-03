@@ -507,7 +507,42 @@ TEMPLATE = r"""<!DOCTYPE html>
     /* Nothing to position: it rides inside the transport now. */
   }
   .trace-form { display: flex; gap: 6px; flex-wrap: wrap; }
-  .trace-form input { flex: 1 1 96px; min-width: 0; }
+  .trace-form input { width: 100%; min-width: 0; }
+  .trace-form .ac { flex: 1 1 96px; min-width: 0; }
+
+  /* Suggestions, replacing <datalist>. Chrome on Android renders a native
+     datalist as a FULL-SCREEN list of every option -- 187 names covering the
+     chart, the rail and the text you were typing. It is unusable on a phone and
+     there is no way to style or cap it, so the list has to be ours. */
+  .ac { position: relative; }
+  .ac-list {
+    position: absolute; left: 0; right: 0; top: calc(100% - 12px); z-index: 40;
+    margin: 0; padding: 0; list-style: none; max-height: 190px; overflow-y: auto;
+    background: var(--panel); border: 1px solid var(--rule);
+    box-shadow: 0 10px 26px rgba(0,0,0,.5);
+  }
+  .trace-form .ac-list { top: 100%; }
+  /* On a phone the rail sits low, so a list anchored downward opens off the
+     bottom of the screen -- and the keyboard takes what is left. Flipped by
+     script when the space below is not enough. */
+  .ac-list.above { top: auto; bottom: calc(100% - 12px); }
+  .trace-form .ac-list.above { top: auto; bottom: 100%; }
+  .ac-list li {
+    padding: 9px 10px; cursor: pointer; font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    border-bottom: 1px solid var(--rule);
+  }
+  .ac-list li:last-child { border-bottom: 0; }
+  /* A finger is not a mouse pointer. 34px rows are comfortable to click and
+     easy to mis-tap, so on touch they grow past the 44px minimum. */
+  @media (pointer: coarse) {
+    .ac-list li { padding: 13px 12px; font-size: 13px; }
+  }
+  /* The active row is marked by a bar and a background, not by hue alone. */
+  .ac-list li[aria-selected="true"] {
+    background: var(--rule); box-shadow: inset 3px 0 0 var(--dating);
+  }
+  .ac-list b { color: var(--dating); font-weight: 600; }
   .trace-form button {
     flex: 0 0 auto; padding: 0 12px;
     background: var(--rule); color: var(--bone); border: 0; border-radius: 3px;
@@ -574,15 +609,26 @@ TEMPLATE = r"""<!DOCTYPE html>
 
     <section data-panel="find" hidden>
       <h2>Find a character</h2>
-      <input id="search" type="search" placeholder="e.g. Meredith" autocomplete="off"
-             list="cast" spellcheck="false" />
-      <datalist id="cast"></datalist>
+      <div class="ac">
+        <input id="search" type="search" placeholder="e.g. Meredith" autocomplete="off"
+               role="combobox" aria-expanded="false" aria-autocomplete="list"
+               aria-controls="ac-search" spellcheck="false" />
+        <ul class="ac-list" id="ac-search" role="listbox" aria-label="Matching characters" hidden></ul>
+      </div>
       <h2>Trace a connection</h2>
       <div class="trace-form">
-        <input id="from" type="search" placeholder="From" autocomplete="off"
-               list="cast" spellcheck="false" />
-        <input id="to" type="search" placeholder="To" autocomplete="off"
-               list="cast" spellcheck="false" />
+        <div class="ac">
+          <input id="from" type="search" placeholder="From" autocomplete="off"
+                 role="combobox" aria-expanded="false" aria-autocomplete="list"
+                 aria-controls="ac-from" spellcheck="false" />
+          <ul class="ac-list" id="ac-from" role="listbox" aria-label="Matching characters" hidden></ul>
+        </div>
+        <div class="ac">
+          <input id="to" type="search" placeholder="To" autocomplete="off"
+                 role="combobox" aria-expanded="false" aria-autocomplete="list"
+                 aria-controls="ac-to" spellcheck="false" />
+          <ul class="ac-list" id="ac-to" role="listbox" aria-label="Matching characters" hidden></ul>
+        </div>
         <button id="trace-go" type="button">Trace</button>
       </div>
       <div class="trace-out" id="trace-out"></div>
@@ -775,6 +821,9 @@ let hashLoading = false;
 // Hoisted: clearSelection() calls applySearch(), and applyCutoff() can call
 // clearSelection() during boot -- a `const` further down would be a dead zone.
 const searchInput = document.getElementById('search');
+// Same again: applyCutoff() calls refreshCastList() during boot, which assigns
+// this. The function declaration hoists; the `let` it writes to does not.
+let castNames = [];
 // Every date belongs to exactly one show, so every comparison needs to know
 // which clock it is reading. seen() is the only place that knows.
 function seen(show, s, e) {
@@ -1552,14 +1601,116 @@ function refreshStats() {
     .html(d => `<b>${d[1]}</b> ${d[2]}${d[3] ? ` <span class="who">${d[3]}</span>` : ''}`);
 }
 
-// Native autocomplete, refreshed whenever the cast on screen changes.
+// Autocomplete. This was a <datalist>, which is one attribute and does the job
+// on a desktop -- and on Android Chrome renders as a full-screen list of all 187
+// names, over the chart and over the text being typed. Nothing about a datalist
+// can be capped or styled, so the list is ours: at most 8 rows, anchored under
+// the field, and dismissable. `castNames` is declared up in the hoisting block.
 function refreshCastList() {
-  const names = DATA.nodes
-    .filter(n => visible.has(n.id))
-    .map(n => n.id).sort();
-  d3.select('#cast').selectAll('option').data(names)
-    .join('option').attr('value', d => d);
+  castNames = DATA.nodes.filter(n => visible.has(n.id)).map(n => n.id).sort();
 }
+
+function autocomplete(input) {
+  const list = document.getElementById(input.getAttribute('aria-controls'));
+  if (!list) return;
+  let items = [], active = -1;
+
+  const close = () => {
+    list.hidden = true;
+    list.replaceChildren();
+    input.setAttribute('aria-expanded', 'false');
+    input.removeAttribute('aria-activedescendant');
+    items = []; active = -1;
+  };
+
+  const mark = i => {
+    active = i;
+    [...list.children].forEach((li, n) => {
+      const on = n === i;
+      li.setAttribute('aria-selected', on ? 'true' : 'false');
+      if (on) {
+        input.setAttribute('aria-activedescendant', li.id);
+        li.scrollIntoView({ block: 'nearest' });
+      }
+    });
+  };
+
+  const choose = name => {
+    input.value = name;
+    close();
+    // Same event the typing path fires, so selecting and typing cannot drift.
+    // window.Event, not Event: identical in a browser, but under jsdom the
+    // bare global is Node's own Event class and dispatchEvent rejects it.
+    input.dispatchEvent(new window.Event('input', { bubbles: true }));
+    input.dispatchEvent(new window.Event('change', { bubbles: true }));
+  };
+
+  const open = () => {
+    const q = input.value.trim().toLowerCase();
+    if (!q) return close();
+    // Prefix matches first: typing "mer" should offer Meredith before Cormac.
+    const hits = castNames
+      .filter(n => n.toLowerCase().includes(q))
+      .sort((a, b) => a.toLowerCase().indexOf(q) - b.toLowerCase().indexOf(q))
+      .slice(0, 8);
+    // An exact single hit is not a suggestion, it is what they already typed.
+    if (!hits.length || (hits.length === 1 && hits[0].toLowerCase() === q)) return close();
+    list.replaceChildren(...hits.map((name, i) => {
+      const li = document.createElement('li');
+      li.id = `${list.id}-o${i}`;
+      li.setAttribute('role', 'option');
+      li.setAttribute('aria-selected', 'false');
+      const at = name.toLowerCase().indexOf(q);
+      li.append(name.slice(0, at));
+      const hit = document.createElement('b');
+      hit.textContent = name.slice(at, at + q.length);
+      li.append(hit, name.slice(at + q.length));
+      // pointerdown, not click: on touch the input blurs first and a click
+      // handler would fire after the list had already been torn down.
+      li.addEventListener('pointerdown', e => { e.preventDefault(); choose(name); });
+      return li;
+    }));
+    items = hits;
+    active = -1;
+    list.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+    place();
+  };
+
+  // Measured after showing, because the height depends on how many hits there
+  // are. visualViewport is what shrinks when a phone keyboard opens; innerHeight
+  // does not, so using innerHeight here would put the list under the keyboard.
+  const place = () => {
+    const box = input.getBoundingClientRect();
+    const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    const below = vh - box.bottom;
+    const above = box.top;
+    list.classList.remove('above');
+    list.style.maxHeight = '';
+    const needed = list.offsetHeight;
+    // Only flip if there is genuinely more room the other way -- flipping into
+    // an equally bad space just moves the problem.
+    const flip = needed > below - 10 && above > below;
+    if (flip) list.classList.add('above');
+    list.style.maxHeight = Math.max(96, (flip ? above : below) - 12) + 'px';
+  };
+
+  input.addEventListener('input', open);
+  input.addEventListener('focus', open);
+  input.addEventListener('blur', () => setTimeout(close, 120));
+  input.addEventListener('keydown', e => {
+    if (list.hidden) return;
+    if (e.key === 'ArrowDown') { e.preventDefault(); mark((active + 1) % items.length); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); mark((active - 1 + items.length) % items.length); }
+    else if (e.key === 'Enter' && active >= 0) { e.preventDefault(); choose(items[active]); }
+    else if (e.key === 'Escape') { close(); }
+  });
+}
+
+['search', 'from', 'to'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) autocomplete(el);
+});
 
 /* ---- report a problem ---------------------------------------------------- */
 // Two delivery paths, neither of which requires this page to hold a credential.
@@ -1769,7 +1920,7 @@ function startPlayback() {
   const turnOn = k => {
     if (enabled.has(k)) return;
     const box = document.getElementById(k === 'GA' ? 'on' : 'on-' + k);
-    if (box) { box.checked = true; box.dispatchEvent(new Event('change')); }
+    if (box) { box.checked = true; box.dispatchEvent(new window.Event('change')); }
   };
   key === 'ALL' ? Object.keys(cuts).forEach(turnOn) : turnOn(key);
 
@@ -1957,7 +2108,7 @@ function readHash() {
       if (value === 'off') {
         enabled.delete(key);
         const box = document.getElementById(key === 'GA' ? 'on' : 'on-' + key);
-        if (box) { box.checked = false; box.dispatchEvent(new Event('change')); }
+        if (box) { box.checked = false; box.dispatchEvent(new window.Event('change')); }
       } else {
         const [s, e] = value.split('.').map(Number);
         // 0 is meaningful in universe playback: "this show had not premiered

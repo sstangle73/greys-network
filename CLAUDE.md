@@ -38,6 +38,7 @@ a spoiler for them.
 | `tests/paintcheck.mjs` | Asserts the chart actually renders in all three code paths. |
 | `tests/runtime.mjs` | Drives every UI control in jsdom, catches runtime errors. |
 | `tests/crossshow.mjs` | Asserts each show's slider governs only its own dates. |
+| `tests/table.mjs` | Table filters — and, more importantly, that the table is still complete and inert with scripting off. |
 
 ## Build
 
@@ -295,3 +296,17 @@ present-day storyline, which is the same rule Dana used to exclude her.
   (`season-PP`, `on-S19`). A show switched off fades but keeps its position.
 - Label density keys off on-screen pixel gap, not zoom level. Keying it to zoom
   meant spreading the graph out perversely *hid* labels.
+- **The name autocomplete is hand-rolled, and has to stay that way.** It was a
+  `<datalist>`, which is one attribute and behaves perfectly on a desktop. On
+  Android Chrome the same markup renders as a *full-screen* list of all 187
+  names, covering the chart, the rail and the text being typed — and nothing
+  about a native datalist can be capped, styled or positioned. The replacement
+  caps at 8 rows, flips above the field when there is no room below (the rail
+  sits low on a phone, and the keyboard takes what is left), measures against
+  `visualViewport` rather than `innerHeight` so an open keyboard counts, and
+  grows its rows past 44px under `pointer: coarse`.
+- The table has filters too, and they are **progressive enhancement**: every row
+  is in the HTML, filtering only sets `hidden`, and the controls stay
+  `display:none` until the script has run far enough to prove it works — so with
+  scripting off there are no dead widgets in the tab order. That page's reason
+  for existing is the no-JS reading; don't regress it.

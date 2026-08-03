@@ -52,6 +52,7 @@ test:
     - node tests/crossshow.mjs
     - node tests/mobile.mjs
     - node tests/overlap.mjs
+    - node tests/table.mjs
 
 pages:
   stage: deploy
