@@ -282,7 +282,9 @@ def _romantic_edges() -> List[Tuple]:
         ("Addison Montgomery", "Mark Sloan", "Fling", (2, 18), (3, 21)),
         ("Addison Montgomery", "Alex Karev", "Fling", (3, 21), (3, 1)),
         ("Mark Sloan", "Lexie Grey", "Dating", (5, 10), (8, 24)),
-        ("Mark Sloan", "Callie Torres", "Fling", (3, 5), (7, 10)),
+        # 3x04 is the pickup at the bar -- "she turns around and asks if
+        # he's coming". 3x05 is only the morning after.
+        ("Mark Sloan", "Callie Torres", "Fling", (3, 4), (7, 10)),
         ("Mark Sloan", "Reed Adamson", "Fling", (6, 22), (6, 1)),
         ("Mark Sloan", "Teddy Altman", "Fling", (6, 22), (6, 1)),
         ("Nicole Herman", "Graham Maddox", "Fling", (11, 8), (11, 8)),
@@ -302,7 +304,10 @@ def _romantic_edges() -> List[Tuple]:
         ("Carina DeLuca", "Maya Bishop", "Married", (3, 5), None),
 
         # --- George / Izzie / Alex --------------------------------------------
-        ("George O'Malley", "Olivia Harper", "Dating", (1, 9), (2, 2)),
+        # 1x08: Cristina points Olivia out, George reports a "fiery
+        # encounter", and they leave the hospital together. 1x09 only shows
+        # them already established.
+        ("George O'Malley", "Olivia Harper", "Dating", (1, 8), (2, 2)),
         ("George O'Malley", "Izzie Stevens", "Dating", (3, 25), (4, 10)),
         ("Izzie Stevens", "Denny Duquette", "Dating", (2, 27), (2, 27)),
         ("Izzie Stevens", "Alex Karev", "Married", (2, 5), (6, 21)),

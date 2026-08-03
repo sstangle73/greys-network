@@ -220,6 +220,11 @@ Where the remaining risk actually sits, for whoever picks this up:
   relationship is narrated in the past tense the only time it is ever mentioned.
   There is no cutoff at which a viewer would think these couples are together,
   so they only ever draw under "show past ties". Don't "fix" them.
+- **Evidence coverage: 131 cited, 15 inferred, 4 convention, 3 uncited, and 5
+  with no `citations.csv` row at all.** Those last 5 are all Season 22 ties the
+  wiki has not documented yet — they are audited but the reasoning was never
+  written down, and they show as "Unrecorded" rather than pretending. That is
+  the honest state; fill them in when the wiki catches up.
 - **The two ties still lacking an end episode** are Thatcher & Danielle (she
   appears once, and nothing ever ends it) and Naomi & William White (his death
   is never dated anywhere in the cache). Both hold to their season's close,
