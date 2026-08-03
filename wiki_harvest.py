@@ -401,6 +401,43 @@ def diff(edges_path="edges.csv") -> None:
 
 STATE = os.path.join(CACHE, "drift_state.json")
 
+# Ties the wiki has, that this dataset leaves out ON PURPOSE. Without this the
+# first real run reported thirty-odd "candidates", most of them decisions that
+# had already been made and written down -- and a list where the known items
+# outnumber the new ones is a list nobody reads to the bottom of.
+#
+# Every entry needs a reason, because the point is that someone already thought
+# about it. If you disagree with one, delete the line and it comes back.
+EXCLUDED = {
+    # A partner who never appears in a present-day storyline. Same rule Dana
+    # used, and the reason CLAUDE.md gives for each of these.
+    frozenset({"Tom Koracick", "Dana Hamilton"}): "never in a present-day storyline",
+    frozenset({"Teddy Altman", "Allison Brown"}): "never in a present-day storyline",
+    frozenset({"Travis Montgomery", "Michael Williams"}): "never in a present-day storyline",
+    frozenset({"Travis Montgomery", "Michael Cooper Williams"}): "duplicate of Michael Williams",
+    frozenset({"Robert Sullivan", "Claire Sullivan"}): "never in a present-day storyline",
+    frozenset({"Pete Wilder", "Anna Wilder"}): "never in a present-day storyline",
+    # Pre-series marriages with no in-show dates at all, left out rather than
+    # given a degenerate one-episode span.
+    frozenset({"Charlotte King", "Billy Douglas"}): "pre-series, no in-show dates",
+    frozenset({"Catherine Fox", "Robert Avery"}): "pre-series, no in-show dates",
+    # Removed during the audit for failing the scope rule: no sex, and no more
+    # than one date.
+    frozenset({"Alex Karev", "Reed Adamson"}): "fails the scope rule -- propositioned, not consummated",
+    frozenset({"April Kepner", "Robert Stark"}): "fails the scope rule",
+    frozenset({"Amelia Shepherd", "Cass Beckman"}): "fails the scope rule",
+    frozenset({"Lucas Adams", "Katie Rogers"}): "fails the scope rule",
+}
+
+# Not people. The parser picks these out of infobox rows that describe a partner
+# rather than naming one, and they can never resolve to a character page.
+PLACEHOLDERS = {"Others", "Ex-Wife", "Ex-Husband", "High School Girlfriend",
+                "High School Boyfriend", "Unnamed", "Unknown"}
+
+
+def _is_placeholder(pair) -> bool:
+    return any(n in PLACEHOLDERS or " and " in n for n in pair)
+
 
 def _key(pair) -> str:
     """A frozenset is unordered and unserialisable; JSON needs a stable string."""
@@ -447,7 +484,11 @@ def drift(edges_path="edges.csv", report="drift_report.md") -> int:
         for row in csv.DictReader(fh):
             theirs[frozenset({row["Subject"], row["Partner"]})] = row
 
-    missing = sorted((k for k in theirs if k not in mine), key=lambda s: sorted(s))
+    all_missing = [k for k in theirs if k not in mine]
+    known = [k for k in all_missing if k in EXCLUDED]
+    junk = [k for k in all_missing if k not in EXCLUDED and _is_placeholder(k)]
+    missing = sorted((k for k in all_missing if k not in EXCLUDED
+                      and not _is_placeholder(k)), key=lambda s: sorted(s))
 
     # A standing difference is not news. On the second run the report said the
     # same thing as the first, so "the pipeline failed" stopped meaning "the wiki
@@ -458,7 +499,11 @@ def drift(edges_path="edges.csv", report="drift_report.md") -> int:
     # It lives in the cache directory on purpose -- CI already caches that, so
     # the memory persists between pipelines without a commit or an artifact.
     prior = _load_state()
-    now = {_key(k): theirs[k]["Type_Guess"] for k in theirs}
+    # Excluded ties are kept out of the snapshot as well, so removing a line
+    # from EXCLUDED makes that tie reappear as NEW -- which is what you want if
+    # you have changed your mind about it.
+    now = {_key(k): theirs[k]["Type_Guess"] for k in theirs
+           if k not in EXCLUDED and not _is_placeholder(k)}
     fresh = sorted(k for k in now if k not in prior)
     retyped = sorted(k for k in now if k in prior and prior[k] != now[k])
     gone = sorted(k for k in prior if k not in now)
@@ -503,6 +548,23 @@ def drift(edges_path="edges.csv", report="drift_report.md") -> int:
             mark = " **[new]**" if _key(k) in fresh else ""
             lines.append(f"- **{' & '.join(sorted(k))}**{mark} — {row['Type_Guess']}{hint}")
         lines.append("")
+
+    # Say what was filtered out. A report that quietly drops things reads as
+    # "the wiki agrees with us" when what it means is "we stopped looking".
+    if known or junk:
+        lines += ["## Filtered out", ""]
+        if known:
+            lines.append(f"{len(known)} tie(s) the wiki has and this dataset "
+                         f"leaves out deliberately:")
+            for k in sorted(known, key=lambda s: sorted(s)):
+                lines.append(f"- {' & '.join(sorted(k))} — _{EXCLUDED[k]}_")
+            lines.append("")
+        if junk:
+            lines.append(f"{len(junk)} parsed as a description rather than a "
+                         f"person, so they can never resolve to a character page:")
+            for k in sorted(junk, key=lambda s: sorted(s)):
+                lines.append(f"- {' & '.join(sorted(k))}")
+            lines.append("")
 
     _save_state(now)
     with open(report, "w", encoding="utf-8", newline="\n") as fh:

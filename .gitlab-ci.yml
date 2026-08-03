@@ -108,6 +108,12 @@ drift:
     key: wikicache-v1
     paths:
       - wikicache/
+    # THIS JOB EXISTS TO FAIL. cache:when defaults to on_success, so the drift
+    # snapshot inside wikicache/ was being thrown away on exactly the runs that
+    # produced it -- every run would have looked like a first run, and the
+    # "only alert when something moved" logic would have alerted every week
+    # forever. Caught by running the schedule once instead of trusting it.
+    when: always
   before_script:
     - pip install --quiet pandas
   script:

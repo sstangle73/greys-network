@@ -335,4 +335,21 @@ found** — that last one usually meaning a rename, which is exactly when the
 `ALIASES` table goes stale. It fails only when something actually moved.
 
 Standing candidates are still listed, just below the fold and without failing
-the job.
+the job. Ties left out **on purpose** are filtered into their own section with
+the reason attached — `EXCLUDED` in `wiki_harvest.py`. Delete a line there and
+that tie comes back as new, which is what you want if you have changed your
+mind about it. Nothing is dropped silently; the counts are always printed.
+
+**The cache needs `when: always`, and this is not optional.** GitLab's
+`cache:when` defaults to `on_success`, and this job exists to *fail*. The
+snapshot was being thrown away on exactly the runs that produced it, so every
+run would have looked like a first run and the alert would have fired every
+week forever — the precise thing the snapshot was added to prevent. It was
+found by running the schedule once rather than trusting it, which is the only
+way this class of bug shows up: everything passes locally, because locally
+nothing fails.
+
+A scheduled run also rebuilds and redeploys the site. That is intentional — it
+refreshes the portrait cache — and a drift failure does not block it, because
+`pages` needs `build` and `test`, not `drift`. Verified: the run that surfaced
+the cache bug still deployed.
