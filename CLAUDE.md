@@ -310,3 +310,24 @@ present-day storyline, which is the same rule Dana used to exclude her.
   `display:none` until the script has run far enough to prove it works — so with
   scripting off there are no dead widgets in the tab order. That page's reason
   for existing is the no-JS reading; don't regress it.
+- **The two pages round-trip.** Every name in the table links to
+  `greys_network.html#sel=<name>`, which selects that person *and centres on
+  them* — fitting the whole graph instead would land you on a speck among 187
+  nodes. The detail panel links back to `table.html#q=<name>`, which the filter
+  reads. The chart answers "who is this connected to"; the table answers "and
+  how do we know".
+
+## The drift monitor alerts on movement, not on disagreement
+
+It used to fail whenever the wiki had a tie `edges.csv` did not — which meant a
+candidate you had already looked at and rejected failed *every* scheduled run
+forever. An alert that always fires is one nobody reads.
+
+It now keeps a snapshot (`wikicache/drift_state.json`, so CI's existing cache
+carries it between pipelines with no commit and no artifact) and reports three
+things against it: **new** on the wiki, **type changed**, and **no longer
+found** — that last one usually meaning a rename, which is exactly when the
+`ALIASES` table goes stale. It fails only when something actually moved.
+
+Standing candidates are still listed, just below the fold and without failing
+the job.

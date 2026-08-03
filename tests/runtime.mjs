@@ -69,6 +69,16 @@ if (!errors.length) {
                                       if (!doc.getElementById('ac-search').hidden)
                                         throw new Error('open with no matches'); }],
     ['clear search again',    () => { const s = doc.getElementById('search'); s.value = ''; fire(s, 'input'); }],
+    // The other half of the chart/table round trip: the panel should offer the
+    // evidence for whoever is selected, pre-filtered.
+    ['detail links to table',  () => { const n = [...doc.querySelectorAll('.node')][0];
+                                      n.dispatchEvent(new window.Event('click', { bubbles: true }));
+                                      const a = doc.querySelector('#detail .to-table');
+                                      if (!a) throw new Error('no evidence link');
+                                      const href = a.getAttribute('href');
+                                      if (!/^table\.html#q=/.test(href)) throw new Error(href);
+                                      if (/[ ']/.test(href.split('#q=')[1]))
+                                        throw new Error(`unencoded name: ${href}`); }],
     ['search dims markers',   () => { const s2 = doc.getElementById('search'); s2.value='meredith'; fire(s2,'input');
                                       const dimmed = [...doc.querySelectorAll('.marker')].filter(m=>m.classList.contains('dimmed')).length;
                                       const lit = [...doc.querySelectorAll('.marker')].filter(m=>!m.classList.contains('dimmed')).length;

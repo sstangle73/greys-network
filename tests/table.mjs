@@ -145,6 +145,29 @@ check('filters are reflected in the URL', /show=/.test(window.location.hash),
         shown.length > 0 && shown.every(r => r.dataset.type === 'Married'));
 }
 
+// -- the round trip to the chart --------------------------------------------
+// Both pages hold the same data and used to link only at page level, so finding
+// a person here meant finding them again among 187 nodes there.
+{
+  const link = doc.querySelector('tbody a.who');
+  check('names link into the chart', !!link && /greys_network\.html#sel=/.test(link.href),
+        link ? link.getAttribute('href') : 'no link');
+  // The href has to survive a name with a space, an apostrophe or an accent, or
+  // the chart looks up a person who does not exist and silently selects nobody.
+  const tricky = [...doc.querySelectorAll('tbody a.who')]
+    .find(a => a.textContent.includes("O'Malley"));
+  check('a name with an apostrophe is encoded',
+        !!tricky && !/'/.test(tricky.getAttribute('href').split('#sel=')[1]),
+        tricky ? tricky.getAttribute('href') : 'no O’Malley row');
+  check('every name cell is linked',
+        doc.querySelectorAll('tbody a.who').length ===
+        doc.querySelectorAll('tbody tr:not([data-empty])').length * 2);
+  // Links must not swallow the filter search: the row still matches on text.
+  const row = link.closest('tr');
+  check('linking did not break the search index',
+        (row.dataset.names || '').includes(link.textContent.toLowerCase().split(' ')[0]));
+}
+
 // -- the E01 regression -----------------------------------------------------
 // Episode 1 used to be suppressed on the assumption it was always a placeholder.
 // Once the known-flags were filled in, that made real premieres read as vaguer

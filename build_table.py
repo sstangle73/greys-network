@@ -22,6 +22,7 @@ import argparse
 import csv
 import html
 import os
+from urllib.parse import quote
 
 CONFIDENCE_BLURB = {
     "cited": ("Cited", "An episode citation sits on the sentence describing the event."),
@@ -37,6 +38,17 @@ SHOW_NAME = {"GA": "Grey's Anatomy", "PP": "Private Practice", "S19": "Station 1
 def read(path):
     with open(path, encoding="utf-8") as fh:
         return list(csv.DictReader(fh))
+
+
+def person(name):
+    """A name, linked into the chart with that person already selected.
+
+    The two pages only linked to each other at page level, so finding someone
+    here meant finding them again there -- among 187 nodes. `#sel=` is a hash
+    the chart already understood; all it needed was somewhere to be linked from.
+    """
+    return (f'<a class="who" href="greys_network.html#sel={quote(name)}"'
+            f' title="Show {html.escape(name)} in the chart">{html.escape(name)}</a>')
 
 
 def when(row, show):
@@ -95,8 +107,8 @@ def build(indir):
           data-type="{html.escape(e['Relationship_Type'])}"
           data-conf="{html.escape(conf)}"
           data-names="{html.escape(hay)}">
-        <th scope="row">{html.escape(e['Source'])}</th>
-        <td>{html.escape(e['Target'])}</td>
+        <th scope="row">{person(e['Source'])}</th>
+        <td>{person(e['Target'])}</td>
         <td>{type_cell}</td>
         <td><abbr title="{html.escape(SHOW_NAME.get(e['Show'], e['Show']))}">{html.escape(e['Show'])}</abbr></td>
         <td>{when(e, e['Show'])}</td>
@@ -188,6 +200,12 @@ TEMPLATE = """<!DOCTYPE html>
   tbody th {{ font-weight: 600; }}
   tbody tr:hover {{ background: rgba(255,255,255,.035); }}
   .none {{ color: var(--muted); }}
+  /* Linked names, styled to stay readable in bulk: 474 of them as ordinary
+     links would turn the table into a page of underlines. */
+  a.who {{ color: inherit; text-decoration: none;
+          border-bottom: 1px dotted var(--muted); }}
+  a.who:hover, a.who:focus-visible {{ color: var(--cyan); border-bottom-color: var(--cyan); }}
+  a.who:focus-visible {{ outline: 2px solid var(--cyan); outline-offset: 2px; }}
   .tag {{ font-size: 11px; color: var(--magenta); }}
   abbr {{ text-decoration: none; border-bottom: 1px dotted var(--muted); cursor: help; }}
   /* Confidence is text first. Colour only reinforces it, and the four hues are

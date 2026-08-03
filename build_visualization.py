@@ -328,6 +328,12 @@ TEMPLATE = r"""<!DOCTYPE html>
     font-family: 'IBM Plex Mono', monospace; font-size: 12px;
   }
   .trace-form input { margin-bottom: 0; }
+  .to-table {
+    display: block; margin-top: 16px; padding-top: 12px;
+    border-top: 1px solid var(--rule); color: var(--dating);
+    font-size: 11px; letter-spacing: .04em; text-decoration: none;
+  }
+  .to-table:hover, .to-table:focus-visible { text-decoration: underline; }
   .linkish {
     display: block; margin-top: 8px; padding: 0;
     background: none; border: 0; color: var(--dating); cursor: pointer;
@@ -1357,6 +1363,20 @@ function fitToView(duration = 400, floor = 0) {
   svg.transition().duration(duration).call(zoom.transform, t);
 }
 
+// Arriving from a link that names one person. Fitting the whole graph and
+// selecting them is technically correct and useless -- on 187 nodes the person
+// you asked for is a speck. Put them in the middle instead.
+function centreOn(node, duration = 500) {
+  if (!node || !isFinite(node.x)) return;
+  const vw = viewport();
+  if (vw.h < 120) return;
+  const k = 1.15;
+  const t = d3.zoomIdentity
+    .translate(vw.x + vw.w / 2 - k * node.x, vw.y + vw.h / 2 - k * node.y)
+    .scale(k);
+  svg.transition().duration(duration).call(zoom.transform, t);
+}
+
 // Settle the layout off-screen first, then frame it, so the graph is never
 // rendered mid-explosion or half outside the canvas.
 sim.stop();
@@ -1484,7 +1504,12 @@ function select(d) {
             <span class="who">${r.other}</span>
             <span class="when">${r.when}${r.split ? ' \u00b7 divorced' : ''}</span>
           </li>`).join('')}</ul>
-      </div>`).join('');
+      </div>`).join('') +
+    // The other half of the round trip. The chart answers "who is this connected
+    // to"; the table answers "and how do we know". Linking to a pre-filtered
+    // table means that second question is one tap away rather than a re-search.
+    `<a class="to-table" href="table.html#q=${encodeURIComponent(d.id)}">` +
+    `Evidence for ${d.id} &rarr;</a>`;
 
   updateLabels();
 
@@ -2178,7 +2203,8 @@ window.addEventListener('resize', () => {
   fitToView(0, initialFloor());
   if (selected) {
     const who = DATA.nodes.find(n => n.id === selected);
-    if (who && visible.has(who.id)) select(who); else selected = null;
+    if (who && visible.has(who.id)) { select(who); centreOn(who, 0); }
+    else selected = null;
   }
   if (restored.trace) runTrace();
 })();

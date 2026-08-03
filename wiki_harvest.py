@@ -399,6 +399,30 @@ def diff(edges_path="edges.csv") -> None:
         print(f"  ~ {' & '.join(sorted(k))}: ours={ours} wiki={guess}")
 
 
+STATE = os.path.join(CACHE, "drift_state.json")
+
+
+def _key(pair) -> str:
+    """A frozenset is unordered and unserialisable; JSON needs a stable string."""
+    return " & ".join(sorted(pair))
+
+
+def _load_state() -> dict:
+    try:
+        with open(STATE, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        # A missing or corrupt snapshot must not take the run down -- the report
+        # just says "first run" and rebuilds it.
+        return {}
+
+
+def _save_state(state: dict) -> None:
+    os.makedirs(CACHE, exist_ok=True)
+    with open(STATE, "w", encoding="utf-8", newline="\n") as fh:
+        json.dump(state, fh, indent=1, sort_keys=True)
+
+
 def drift(edges_path="edges.csv", report="drift_report.md") -> int:
     """Harvest, parse and diff in one pass, then write a report.
 
@@ -425,12 +449,46 @@ def drift(edges_path="edges.csv", report="drift_report.md") -> int:
 
     missing = sorted((k for k in theirs if k not in mine), key=lambda s: sorted(s))
 
+    # A standing difference is not news. On the second run the report said the
+    # same thing as the first, so "the pipeline failed" stopped meaning "the wiki
+    # moved" and started meaning "it is still Tuesday". The snapshot is what
+    # turns this from a status into an alert: it can say what changed SINCE LAST
+    # TIME, which is the only part anyone needs to act on.
+    #
+    # It lives in the cache directory on purpose -- CI already caches that, so
+    # the memory persists between pipelines without a commit or an artifact.
+    prior = _load_state()
+    now = {_key(k): theirs[k]["Type_Guess"] for k in theirs}
+    fresh = sorted(k for k in now if k not in prior)
+    retyped = sorted(k for k in now if k in prior and prior[k] != now[k])
+    gone = sorted(k for k in prior if k not in now)
+
     lines = ["# Wiki drift report", ""]
+
+    if prior and (fresh or retyped or gone):
+        lines += [f"## Changed since the last run", ""]
+        for k in fresh:
+            lines.append(f"- **NEW on the wiki**: {k} — {now[k]}")
+        for k in retyped:
+            lines.append(f"- **TYPE CHANGED**: {k} — was {prior[k]}, now {now[k]}")
+        for k in gone:
+            # Usually a rename or a page reorganisation rather than a deletion,
+            # but it is exactly the case where our alias table goes stale.
+            lines.append(f"- **NO LONGER FOUND**: {k} — was {prior[k]}. "
+                         f"Check for a rename, and check `ALIASES`.")
+        lines.append("")
+    elif prior:
+        lines += ["Nothing changed on the wiki since the last run.", ""]
+    else:
+        lines += ["_First run: no previous snapshot, so nothing to compare "
+                  "against yet. The next run will report changes._", ""]
+
+    lines += ["## Standing candidates", ""]
     if not missing:
         lines += ["No new ties. The wiki and `edges.csv` agree on who exists.", ""]
     else:
         lines += [
-            f"The wiki now has **{len(missing)} tie(s)** that `edges.csv` does not.",
+            f"The wiki has **{len(missing)} tie(s)** that `edges.csv` does not.",
             "",
             "Every one of these is a CANDIDATE, not a correction. Before adding any",
             "of them, check the prose against the scope rule -- a `==Romantic==`",
@@ -442,12 +500,20 @@ def drift(edges_path="edges.csv", report="drift_report.md") -> int:
             row = theirs[k]
             hint = (f" _(hint: S{row['Season_Hint_First']}-S{row['Season_Hint_Last']}"
                     f" -- verify, do not copy)_" if row["Season_Hint_First"] else "")
-            lines.append(f"- **{' & '.join(sorted(k))}** — {row['Type_Guess']}{hint}")
+            mark = " **[new]**" if _key(k) in fresh else ""
+            lines.append(f"- **{' & '.join(sorted(k))}**{mark} — {row['Type_Guess']}{hint}")
         lines.append("")
 
+    _save_state(now)
     with open(report, "w", encoding="utf-8", newline="\n") as fh:
         fh.write("\n".join(lines))
     print("\n".join(lines))
+
+    # Fail only on genuine movement. A standing candidate that has already been
+    # looked at and rejected must not fail every scheduled run forever -- an
+    # alert that always fires is one nobody reads.
+    if prior:
+        return 1 if (fresh or retyped or gone) else 0
     return 1 if missing else 0
 
 
