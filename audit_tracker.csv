@@ -1,129 +1,125 @@
 Source,Target,Relationship_Type,First_Season,First_Episode,Last_Season,Last_Episode,Married_Season,Outcome,Verified,Citation,Confidence
-Addison Montgomery,Mark Sloan,Fling,2,1,3.0,1.0,,,yes,,inferred
-Addison Montgomery,Alex Karev,Fling,3,1,3.0,1.0,,,yes,,inferred
-Addison Montgomery,Pete Wilder,Dating,3,1,3.0,23.0,,,yes,3x20 PP;3x23 PP,inferred
+Addison Montgomery,Mark Sloan,Fling,2,18,3.0,21.0,,,yes,,inferred
+Addison Montgomery,Alex Karev,Fling,3,21,3.0,21.0,,,yes,,inferred
+Addison Montgomery,Pete Wilder,Dating,3,14,3.0,23.0,,,yes,3x20 PP;3x23 PP,inferred
 Addison Montgomery,Sam Bennett,Dating,4,1,5.0,22.0,,,yes,5x01 PP;5x02 PP;5x04 PP,cited
 Addison Montgomery,Jake Reilly,Married,4,22,,,6.0,,yes,4x22 PP;6x07 PP;6x13 PP,cited
-Alex Karev,Olivia Harper,Fling,2,1,2.0,1.0,,,yes,,inferred
-Alex Karev,Rebecca Pope,Dating,4,1,4.0,1.0,,,yes,,inferred
-Alex Karev,Lexie Grey,Dating,5,1,6.0,1.0,,,yes,,cited
-Alex Karev,Jo Wilson,Married,9,1,16.0,1.0,14.0,Divorced,yes,14x24 All of Me,cited
-Amelia Shepherd,Tom Koracick,Fling,14,1,14.0,1.0,,,yes,14x06,cited
-Amelia Shepherd,Kai Bartley,Dating,18,1,19.0,1.0,,,yes,18x08;18x12;19x15,cited
-Andrew DeLuca,Sam Bello,Dating,14,1,14.0,1.0,,,yes,,unrecorded
-April Kepner,Jackson Avery,Married,8,1,,,10.0,Divorced,yes,8x22;10x13;12x11;18x20,cited
-April Kepner,Matthew Taylor,Married,9,1,17.0,1.0,14.0,,yes,14x24 All of Me;17x14,cited
-Arizona Robbins,Lauren Boswell,Fling,9,1,9.0,1.0,,,yes,9x23,cited
-Arizona Robbins,Leah Murphy,Fling,10,1,10.0,1.0,,,yes,10x04,cited
-Arizona Robbins,Eliza Minnick,Dating,13,1,13.0,1.0,,,yes,,inferred
-Arizona Robbins,Carina DeLuca,Dating,14,1,14.0,1.0,,,yes,,inferred
-Atticus Lincoln,Amelia Shepherd,Dating,15,1,18.0,1.0,,,yes,15x17;18x09,cited
-Benson Kwan,Jules Millin,Fling,19,1,19.0,1.0,,,yes,19x03,cited
-Callie Torres,Erica Hahn,Dating,4,1,5.0,1.0,,,yes,4x17;5x01,cited
-Callie Torres,Arizona Robbins,Married,5,1,12.0,1.0,7.0,Divorced,yes,5x14;5x17;7x20;11x05,cited
-Callie Torres,Penny Blake,Dating,12,1,12.0,1.0,,,yes,12x17;12x19,cited
-Carina DeLuca,Maya Bishop,Married,16,1,,,17.0,,yes,3x05 S19;4x13 S19;4x16 S19,cited
-Cristina Yang,Colin Marlow,Dating,2,1,2.0,1.0,,,yes,,convention
-Cristina Yang,Preston Burke,Dating,2,1,3.0,1.0,,,yes,2x03;2x05;2x24,cited
-Cristina Yang,Shane Ross,Fling,10,1,10.0,1.0,,,yes,,cited
-Derek Shepherd,Addison Montgomery,Married,1,9,3.0,1.0,1.0,Divorced,yes,1x09;3x01,cited
-Derek Shepherd,Rose,Dating,4,1,5.0,1.0,,,yes,,inferred
-Ellis Grey,Thatcher Grey,Married,2,1,2.0,1.0,2.0,Divorced,yes,2x18 Yesterday,convention
-George O'Malley,Izzie Stevens,Dating,3,1,4.0,1.0,,,yes,3x25,cited
-Izzie Stevens,Denny Duquette,Dating,2,1,2.0,1.0,,,yes,2x27,cited
-Izzie Stevens,Alex Karev,Married,2,1,6.0,1.0,5.0,Divorced,yes,5x22,cited
-Jackson Avery,Lexie Grey,Dating,7,1,8.0,1.0,,,yes,7x20,cited
-Jackson Avery,Stephanie Edwards,Dating,9,1,10.0,1.0,,,yes,9x10;10x12,cited
-Jackson Avery,Maggie Pierce,Dating,14,1,16.0,1.0,,,yes,14x14;16x01,cited
-Jackson Avery,Victoria Hughes,Dating,16,1,16.0,1.0,,,yes,16x03;16x09;16x12,cited
-Jo Wilson,Jason Myers,Dating,9,1,9.0,1.0,,,yes,9x18;9x21;9x23,cited
-Jo Wilson,Paul Stadler,Married,13,1,14.0,1.0,13.0,,yes,13x12;14x09;14x10,cited
-Levi Schmitt,Nico Kim,Dating,15,1,18.0,1.0,,,yes,15x06;15x08;18x10;18x18,cited
-Maggie Pierce,Ethan Boyd,Dating,11,1,12.0,1.0,,,yes,,uncited
-Maggie Pierce,Andrew DeLuca,Dating,12,1,12.0,1.0,,,yes,12x03;12x16,cited
-Maggie Pierce,Clive Johnson,Dating,14,1,14.0,1.0,,,yes,14x09;14x12;14x14,cited
-Maggie Pierce,Winston Ndugu,Married,16,1,19.0,1.0,17.0,Divorced,yes,16x19;17x17;19x19,cited
-Mark Sloan,Lexie Grey,Dating,5,1,8.0,1.0,,,yes,8x24,cited
-Mark Sloan,Teddy Altman,Fling,6,1,6.0,1.0,,,yes,6x22,cited
-Mark Sloan,Julia Canner,Dating,8,1,9.0,1.0,,,yes,,inferred
-Meredith Grey,Finn Dandridge,Dating,2,1,3.0,1.0,,,yes,,inferred
-Meredith Grey,George O'Malley,Fling,2,1,2.0,1.0,,,yes,2x12,cited
-Meredith Grey,Steve Murphy,Fling,2,1,2.0,1.0,,,yes,,inferred
-Meredith Grey,William Thorpe,Dating,12,1,12.0,1.0,,,yes,12x13;12x16,cited
-Meredith Grey,Nathan Riggs,Dating,12,1,14.0,1.0,,,yes,12x23 At Last,cited
-Meredith Grey,Andrew DeLuca,Dating,15,1,16.0,1.0,,,yes,15x01;16x21,cited
+Alex Karev,Olivia Harper,Fling,2,10,2.0,10.0,,,yes,,inferred
+Alex Karev,Rebecca Pope,Dating,4,10,4.0,17.0,,,yes,,inferred
+Alex Karev,Lexie Grey,Dating,4,6,6.0,24.0,,,yes,,cited
+Alex Karev,Jo Wilson,Married,9,24,16.0,16.0,14.0,Divorced,yes,14x24 All of Me,cited
+Amelia Shepherd,Tom Koracick,Fling,14,6,14.0,6.0,,,yes,14x06,cited
+Amelia Shepherd,Kai Bartley,Dating,18,8,19.0,15.0,,,yes,18x08;18x12;19x15,cited
+Andrew DeLuca,Sam Bello,Dating,14,7,14.0,19.0,,,yes,,unrecorded
+April Kepner,Jackson Avery,Married,8,22,,,10.0,Divorced,yes,8x22;10x13;12x11;18x20,cited
+April Kepner,Matthew Taylor,Married,9,15,17.0,14.0,14.0,,yes,14x24 All of Me;17x14,cited
+Arizona Robbins,Lauren Boswell,Fling,9,23,9.0,23.0,,,yes,9x23,cited
+Arizona Robbins,Leah Murphy,Fling,10,4,10.0,9.0,,,yes,10x04,cited
+Arizona Robbins,Eliza Minnick,Dating,13,14,13.0,24.0,,,yes,,inferred
+Arizona Robbins,Carina DeLuca,Dating,14,1,14.0,22.0,,,yes,,inferred
+Atticus Lincoln,Amelia Shepherd,Dating,15,17,18.0,9.0,,,yes,15x17;18x09,cited
+Benson Kwan,Jules Millin,Fling,19,3,19.0,3.0,,,yes,19x03,cited
+Callie Torres,Erica Hahn,Dating,4,17,5.0,7.0,,,yes,4x17;5x01,cited
+Callie Torres,Arizona Robbins,Married,5,14,11.0,5.0,7.0,Divorced,yes,5x14;5x17;7x20;11x05,cited
+Callie Torres,Penny Blake,Dating,12,17,12.0,23.0,,,yes,12x17;12x19,cited
+Carina DeLuca,Maya Bishop,Married,3,5,,,4.0,,yes,3x05 S19;4x13 S19;4x16 S19,cited
+Cristina Yang,Colin Marlow,Dating,3,18,3.0,20.0,,,yes,,convention
+Cristina Yang,Preston Burke,Dating,2,3,3.0,25.0,,,yes,2x03;2x05;2x24,cited
+Cristina Yang,Shane Ross,Fling,10,10,10.0,12.0,,,yes,,cited
+Derek Shepherd,Addison Montgomery,Married,1,9,3.0,5.0,1.0,Divorced,yes,1x09;3x01,cited
+Derek Shepherd,Rose,Dating,4,11,5.0,2.0,,,yes,,inferred
+Ellis Grey,Thatcher Grey,Married,2,18,2.0,18.0,2.0,Divorced,yes,2x18 Yesterday,convention
+George O'Malley,Izzie Stevens,Dating,3,25,4.0,10.0,,,yes,3x25,cited
+Izzie Stevens,Denny Duquette,Dating,2,27,2.0,27.0,,,yes,2x27,cited
+Izzie Stevens,Alex Karev,Married,2,5,6.0,21.0,5.0,Divorced,yes,5x22,cited
+Jackson Avery,Lexie Grey,Dating,7,20,8.0,8.0,,,yes,7x20,cited
+Jackson Avery,Stephanie Edwards,Dating,9,10,10.0,12.0,,,yes,9x10;10x12,cited
+Jackson Avery,Maggie Pierce,Dating,14,14,16.0,1.0,,,yes,14x14;16x01,cited
+Jackson Avery,Victoria Hughes,Dating,16,3,16.0,17.0,,,yes,16x03;16x09;16x12,cited
+Jo Wilson,Jason Myers,Dating,9,18,9.0,23.0,,,yes,9x18;9x21;9x23,cited
+Jo Wilson,Paul Stadler,Married,13,12,14.0,10.0,13.0,,yes,13x12;14x09;14x10,cited
+Levi Schmitt,Nico Kim,Dating,15,6,18.0,10.0,,,yes,15x06;15x08;18x10;18x18,cited
+Maggie Pierce,Ethan Boyd,Dating,11,15,12.0,3.0,,,yes,,uncited
+Maggie Pierce,Andrew DeLuca,Dating,12,3,12.0,16.0,,,yes,12x03;12x16,cited
+Maggie Pierce,Clive Johnson,Dating,14,9,14.0,14.0,,,yes,14x09;14x12;14x14,cited
+Maggie Pierce,Winston Ndugu,Married,16,19,19.0,20.0,17.0,Divorced,yes,16x19;17x17;19x19,cited
+Mark Sloan,Lexie Grey,Dating,5,10,8.0,24.0,,,yes,8x24,cited
+Mark Sloan,Teddy Altman,Fling,6,22,6.0,22.0,,,yes,6x22,cited
+Mark Sloan,Julia Canner,Dating,8,7,9.0,2.0,,,yes,,inferred
+Meredith Grey,Finn Dandridge,Dating,2,23,3.0,4.0,,,yes,,inferred
+Meredith Grey,George O'Malley,Fling,2,12,2.0,12.0,,,yes,2x12,cited
+Meredith Grey,Steve Murphy,Fling,2,10,2.0,10.0,,,yes,,inferred
+Meredith Grey,William Thorpe,Dating,12,13,12.0,16.0,,,yes,12x13;12x16,cited
+Meredith Grey,Nathan Riggs,Dating,12,23,14.0,5.0,,,yes,12x23 At Last,cited
+Meredith Grey,Andrew DeLuca,Dating,15,13,16.0,14.0,,,yes,15x01;16x21,cited
 Meredith Grey,Cormac Hayes,Dating,18,1,18.0,1.0,,,yes,18x01,cited
-Meredith Grey,Nick Marsh,Dating,18,1,,,,,yes,18x01;18x02;18x05,cited
-Miranda Bailey,Tucker Jones,Married,1,1,6.0,1.0,1.0,Divorced,yes,6x14;6x22,cited
-Miranda Bailey,Eli Lloyd,Dating,7,1,8.0,1.0,,,yes,8x04;8x05,cited
-Miranda Bailey,Ben Warren,Married,6,1,,,9.0,,yes,6x14;6x22;9x10,cited
-Nathan Riggs,Megan Hunt,Dating,14,1,18.0,1.0,,,yes,14x05 Danger Zone;18x01,cited
-Owen Hunt,Emma Marling,Dating,10,1,10.0,1.0,,,yes,10x04;10x05;10x08,cited
+Meredith Grey,Nick Marsh,Dating,18,2,,,,,yes,18x01;18x02;18x05,cited
+Miranda Bailey,Tucker Jones,Married,2,5,6.0,10.0,2.0,Divorced,yes,6x14;6x22,cited
+Miranda Bailey,Eli Lloyd,Dating,7,10,8.0,5.0,,,yes,8x04;8x05,cited
+Miranda Bailey,Ben Warren,Married,6,14,,,9.0,,yes,6x14;6x22;9x10,cited
+Nathan Riggs,Megan Hunt,Dating,14,5,18.0,1.0,,,yes,14x05 Danger Zone;18x01,cited
+Owen Hunt,Emma Marling,Dating,10,4,10.0,14.0,,,yes,10x04;10x05;10x08,cited
 Owen Hunt,Nora,Fling,21,13,21.0,13.0,,,yes,21x13 Put It to the Test,cited
-Richard Webber,Adele Webber,Married,1,1,9.0,1.0,1.0,,yes,9x10,cited
-Richard Webber,Ellis Grey,Fling,2,1,3.0,1.0,,,yes,3x08;3x14,cited
-Richard Webber,Catherine Fox,Married,8,1,,,11.0,,yes,8x23;11x24;16x22,cited
-Taryn Helm,Mika Yasuda,Dating,19,1,20.0,1.0,,,yes,19x09;20x02;20x09,cited
-Teddy Altman,Henry Burton,Married,7,1,8.0,1.0,7.0,,yes,7x10;7x11;8x10,cited
-Teddy Altman,Andrew Perkins,Dating,7,1,7.0,1.0,,,yes,7x01;7x02;7x03,cited
-Teddy Altman,Tom Koracick,Dating,15,1,17.0,1.0,,,yes,15x12;15x13;17x01,cited
-Teddy Altman,Cass Beckman,Dating,21,6,21.0,18.0,,,yes,21x06 Night Moves,cited
-Thatcher Grey,Susan Grey,Married,2,1,3.0,1.0,2.0,,yes,2x22;3x23,cited
-Alex Karev,Reed Adamson,Fling,6,1,6.0,1.0,,,yes,,unrecorded
-Alex Karev,Lucy Fields,Dating,7,1,7.0,1.0,,,yes,,unrecorded
-Amelia Shepherd,Owen Hunt,Married,11,1,15.0,1.0,12.0,Divorced,yes,12x01;15x01,cited
+Richard Webber,Adele Webber,Married,2,2,9.0,10.0,2.0,,yes,9x10,cited
+Richard Webber,Ellis Grey,Fling,2,15,3.0,17.0,,,yes,3x08;3x14,cited
+Richard Webber,Catherine Fox,Married,8,23,,,11.0,,yes,8x23;11x24;16x22,cited
+Taryn Helm,Mika Yasuda,Dating,19,9,20.0,9.0,,,yes,19x09;20x02;20x09,cited
+Teddy Altman,Henry Burton,Married,7,10,8.0,9.0,7.0,,yes,7x10;7x11;8x10,cited
+Teddy Altman,Andrew Perkins,Dating,7,1,7.0,22.0,,,yes,7x01;7x02;7x03,cited
+Teddy Altman,Tom Koracick,Dating,15,12,17.0,7.0,,,yes,15x12;15x13;17x01,cited
+Teddy Altman,Cass Beckman,Dating,21,6,,,,,yes,21x06 Night Moves,cited
+Thatcher Grey,Susan Grey,Married,2,22,3.0,23.0,2.0,,yes,2x22;3x23,cited
+Alex Karev,Lucy Fields,Dating,7,17,7.0,22.0,,,yes,,unrecorded
+Amelia Shepherd,Owen Hunt,Married,11,17,15.0,16.0,12.0,Divorced,yes,12x01;15x01,cited
 Amelia Shepherd,Toni Wright,Dating,22,11,22.0,18.0,,,yes,,unrecorded
-Amelia Shepherd,Cass Beckman,Fling,22,18,22.0,18.0,,,yes,,unrecorded
-April Kepner,Robert Stark,Dating,7,1,7.0,1.0,,,yes,,unrecorded
-April Kepner,Tom Koracick,Fling,14,1,14.0,1.0,,,yes,14x15,cited
+April Kepner,Tom Koracick,Fling,14,15,14.0,15.0,,,yes,14x15,cited
 Benson Kwan,Kavita Mohanty,Dating,22,7,22.0,16.0,,,yes,,unrecorded
-Callie Torres,George O'Malley,Married,2,1,4.0,1.0,3.0,Divorced,yes,,unrecorded
-George O'Malley,Olivia Harper,Dating,2,1,2.0,1.0,,,yes,,unrecorded
-Jackson Avery,Mara Keaton,Fling,8,1,8.0,1.0,,,yes,8x17,cited
-Jackson Avery,Priya,Dating,14,1,14.0,1.0,,,yes,,unrecorded
-Jackson Avery,Jo Wilson,Fling,17,1,17.0,1.0,,,yes,17x01;17x04,cited
-Jo Wilson,Levi Schmitt,Fling,16,1,16.0,1.0,,,yes,,unrecorded
-Jo Wilson,Todd Eames,Dating,18,1,18.0,1.0,,,yes,,unrecorded
-Jo Wilson,Atticus Lincoln,Married,19,1,,,21.0,,yes,21x17,cited
+Callie Torres,George O'Malley,Married,2,23,4.0,13.0,3.0,Divorced,yes,,unrecorded
+George O'Malley,Olivia Harper,Dating,1,9,2.0,2.0,,,yes,,unrecorded
+Jackson Avery,Mara Keaton,Fling,8,17,8.0,17.0,,,yes,8x17,cited
+Jackson Avery,Priya,Dating,14,13,14.0,14.0,,,yes,,unrecorded
+Jackson Avery,Jo Wilson,Fling,17,4,17.0,15.0,,,yes,17x01;17x04,cited
+Jo Wilson,Levi Schmitt,Fling,14,1,14.0,1.0,,,yes,,unrecorded
+Jo Wilson,Todd Eames,Dating,18,13,18.0,19.0,,,yes,,unrecorded
+Jo Wilson,Atticus Lincoln,Married,18,9,,,21.0,,yes,21x17,cited
 Jules Millin,Winston Ndugu,Dating,22,15,,,,,yes,,unrecorded
-Lucas Adams,Katie Rogers,Dating,22,8,,,,,yes,,unrecorded
-Mark Sloan,Callie Torres,Fling,3,1,7.0,1.0,,,yes,,unrecorded
-Mark Sloan,Reed Adamson,Fling,6,1,6.0,1.0,,,yes,,unrecorded
-Meredith Grey,Derek Shepherd,Married,1,1,11.0,1.0,7.0,,yes,1x01;7x20,cited
-Nicole Herman,Graham Maddox,Fling,11,1,11.0,1.0,,,yes,,unrecorded
-Nicole Herman,Tom Koracick,Fling,14,1,14.0,1.0,,,yes,,unrecorded
-Owen Hunt,Beth Whitman,Dating,5,1,5.0,1.0,,,yes,,unrecorded
-Owen Hunt,Cristina Yang,Married,5,1,9.0,1.0,7.0,Divorced,yes,5x06;5x19;7x20;9x01,cited
-Owen Hunt,Teddy Altman,Married,14,1,,,17.0,Divorced,yes,15x01;17x17,cited
-Owen Hunt,Carina DeLuca,Fling,14,1,14.0,1.0,,,yes,14x06;14x07;14x12,cited
-Simone Griffith,Trey Delgado,Dating,19,1,19.0,1.0,,,yes,,unrecorded
-Simone Griffith,Lucas Adams,Dating,19,1,22.0,2.0,,,yes,19x09;21x17,cited
+Mark Sloan,Callie Torres,Fling,3,5,7.0,10.0,,,yes,,unrecorded
+Mark Sloan,Reed Adamson,Fling,6,22,6.0,22.0,,,yes,,unrecorded
+Meredith Grey,Derek Shepherd,Married,1,1,11.0,21.0,7.0,,yes,1x01;7x20,cited
+Nicole Herman,Graham Maddox,Fling,11,8,11.0,8.0,,,yes,,unrecorded
+Nicole Herman,Tom Koracick,Fling,14,23,14.0,23.0,,,yes,,unrecorded
+Owen Hunt,Beth Whitman,Dating,5,15,5.0,15.0,,,yes,,unrecorded
+Owen Hunt,Cristina Yang,Married,5,6,9.0,10.0,7.0,Divorced,yes,5x06;5x19;7x20;9x01,cited
+Owen Hunt,Teddy Altman,Married,14,17,,,17.0,Divorced,yes,15x01;17x17,cited
+Owen Hunt,Carina DeLuca,Fling,14,6,14.0,12.0,,,yes,14x06;14x07;14x12,cited
+Simone Griffith,Trey Delgado,Dating,19,9,19.0,20.0,,,yes,,unrecorded
+Simone Griffith,Lucas Adams,Dating,19,9,22.0,1.0,,,yes,19x09;21x17,cited
 Simone Griffith,Wes Bryant,Fling,21,17,,,,,yes,,unrecorded
 Winston Ndugu,Iris,Dating,22,8,22.0,15.0,,,yes,,unrecorded
-Alex Karev,Callie Torres,Fling,6,1,6.0,1.0,,,yes,6x13,cited
-Alex Karev,Laurel Pinson,Fling,7,1,7.0,1.0,,,yes,7x12,cited
-Cristina Yang,Darren Parker,Fling,9,1,9.0,1.0,,,yes,9x03;9x04,cited
-Maggie Pierce,Dean,Dating,11,1,11.0,1.0,,,yes,11x10,cited
-Benson Kwan,Molly Tran,Dating,21,1,21.0,1.0,,,yes,21x02,cited
-Levi Schmitt,James Morgan,Dating,21,1,,,,,yes,21x06,inferred
-April Kepner,Vikram Roy,Fling,14,1,14.0,1.0,,,yes,14x10;14x12;14x13,cited
-Jules Millin,Mika Yasuda,Dating,21,1,21.0,1.0,,,yes,21x01;21x08;21x10,cited
-Mark Sloan,Amelia Shepherd,Fling,7,1,7.0,1.0,,,yes,7x03 Superfreak,cited
+Alex Karev,Callie Torres,Fling,6,13,6.0,13.0,,,yes,6x13,cited
+Alex Karev,Laurel Pinson,Fling,7,12,7.0,12.0,,,yes,7x12,cited
+Cristina Yang,Darren Parker,Fling,9,3,9.0,3.0,,,yes,9x03;9x04,cited
+Maggie Pierce,Dean,Dating,11,10,11.0,10.0,,,yes,11x10,cited
+Benson Kwan,Molly Tran,Dating,21,2,21.0,13.0,,,yes,21x02,cited
+Levi Schmitt,James Morgan,Dating,21,4,,,,,yes,21x06,inferred
+April Kepner,Vikram Roy,Fling,14,10,14.0,10.0,,,yes,14x10;14x12;14x13,cited
+Jules Millin,Mika Yasuda,Dating,21,1,21.0,8.0,,,yes,21x01;21x08;21x10,cited
+Mark Sloan,Amelia Shepherd,Fling,7,3,7.0,3.0,,,yes,7x03 Superfreak,cited
 Lucas Adams,Dani Spencer,Fling,22,16,22.0,16.0,,,yes,,unrecorded
 Atticus Lincoln,Jules Millin,Fling,19,1,19.0,1.0,,,yes,19x01 Everything Has Changed,cited
-Nico Kim,Jason Shaheen,Dating,20,1,,,,,yes,20x03,cited
-Jo Wilson,Chris Cleaver,Dating,14,1,14.0,1.0,,,yes,14x15,cited
-Thatcher Grey,Danielle,Dating,7,1,7.0,1.0,,,yes,7x14 P.Y.T.,cited
-Lucas Adams,Cara Ford,Fling,19,1,19.0,1.0,,,yes,19x10,cited
+Nico Kim,Jason Shaheen,Dating,20,3,,,,,yes,20x03,cited
+Jo Wilson,Chris Cleaver,Dating,14,15,14.0,15.0,,,yes,14x15,cited
+Thatcher Grey,Danielle,Dating,7,14,7.0,1.0,,,yes,7x14 P.Y.T.,cited
+Lucas Adams,Cara Ford,Fling,19,10,19.0,10.0,,,yes,19x10,cited
 Winston Ndugu,Monica Beltran,Fling,20,10,20.0,10.0,,,yes,21x05,cited
 Addison Montgomery,Kevin Nelson,Dating,2,4,2.0,13.0,,,yes,2x04 PP;2x13 PP,cited
-Violet Turner,Pete Wilder,Married,2,1,6.0,1.0,4.0,,yes,4x01 PP;5x01 PP;6x01 PP,cited
+Violet Turner,Pete Wilder,Married,2,9,6.0,1.0,4.0,,yes,4x01 PP;5x01 PP;6x01 PP,cited
 Violet Turner,Sheldon Wallace,Dating,2,8,2.0,22.0,,,yes,,inferred
 Violet Turner,The Captain Montgomery,Fling,3,9,3.0,9.0,,,yes,3x09 PP,cited
 Violet Turner,Scott Becker,Dating,5,11,5.0,17.0,,,yes,5x11 PP;5x13 PP;5x17 PP,cited
 Violet Turner,Allan,Dating,1,5,1.0,5.0,,,yes,1x05 PP,convention
-Pete Wilder,Meg Porter,Dating,1,1,2.0,1.0,,,yes,,uncited
-Pete Wilder,Lisa King,Dating,2,1,2.0,22.0,,,yes,,inferred
+Pete Wilder,Meg Porter,Dating,2,5,2.0,10.0,,,yes,,uncited
+Pete Wilder,Lisa King,Dating,2,20,2.0,21.0,,,yes,,inferred
 Cooper Freedman,Charlotte King,Married,1,8,,,4.0,,yes,1x08 PP;4x20 PP,cited
 Charlotte King,Sheldon Wallace,Fling,3,16,3.0,22.0,,,yes,3x16 PP;3x17 PP;3x22 PP,cited
 Charlotte King,Archer Montgomery,Fling,2,17,2.0,17.0,,,yes,2x17 PP,cited
@@ -134,18 +130,18 @@ Sam Bennett,Sonya Nichols,Dating,2,12,2.0,22.0,,,yes,2x12 PP,cited
 Sam Bennett,Stephanie Kemp,Dating,6,1,6.0,13.0,,,yes,6x13 PP,inferred
 Naomi Bennett,Archer Montgomery,Fling,2,7,4.0,14.0,,,yes,2x07 PP;2x17 PP;4x14 PP,cited
 Naomi Bennett,William White,Dating,3,14,4.0,1.0,,,yes,3x14 PP;3x23 PP;4x01 PP,cited
-Naomi Bennett,Gabriel Fife,Dating,4,1,6.0,13.0,,,yes,4x22 PP;6x13 PP,cited
-Dell Parker,Heather Parker,Married,3,1,3.0,10.0,3.0,,yes,3x10 PP,cited
+Naomi Bennett,Gabriel Fife,Dating,4,22,6.0,13.0,,,yes,4x22 PP;6x13 PP,cited
+Dell Parker,Heather Parker,Married,3,10,3.0,10.0,3.0,,yes,3x10 PP,cited
 Maya Bennett,Fillmore Davis,Married,3,9,,,3.0,,yes,3x09 PP;3x15 PP,cited
 Amelia Shepherd,Ryan Kerrigan,Dating,5,6,5.0,8.0,,,yes,5x06 PP;5x08 PP,cited
-Amelia Shepherd,James Peterson,Dating,6,1,6.0,13.0,,,yes,,inferred
-Andy Herrera,Ryan Tanner,Fling,1,7,2.0,10.0,,,yes,1x07 S19;2x08 S19;2x10 S19,cited
+Amelia Shepherd,James Peterson,Dating,6,11,6.0,13.0,,,yes,,inferred
+Andy Herrera,Ryan Tanner,Fling,1,7,2.0,12.0,,,yes,1x07 S19;2x08 S19;2x10 S19,cited
 Andy Herrera,Jack Gibson,Dating,1,1,1.0,5.0,,,yes,1x01 S19;1x04 S19;1x05 S19,cited
-Andy Herrera,Robert Sullivan,Married,2,17,5.0,4.0,3.0,Divorced,yes,2x17 S19;3x12 S19;5x04 S19,cited
+Andy Herrera,Robert Sullivan,Married,2,17,5.0,8.0,3.0,Divorced,yes,2x17 S19;3x12 S19;5x04 S19,cited
 Andy Herrera,Sean Beckett,Fling,5,2,5.0,2.0,,,yes,5x02 S19,cited
 Robert Sullivan,Natasha Ross,Married,5,11,,,7.0,,yes,5x11 S19;5x17 S19;7x10 S19,cited
 Maya Bishop,Charlotte Dearborn,Fling,1,10,1.0,10.0,,,yes,1x10 S19,cited
-Maya Bishop,Jack Gibson,Dating,2,10,3.0,15.0,,,yes,2x10 S19;2x16 S19;3x01 S19,cited
+Maya Bishop,Jack Gibson,Dating,2,10,3.0,1.0,,,yes,2x10 S19;2x16 S19;3x01 S19,cited
 Jack Gibson,Inara,Dating,4,16,4.0,16.0,,,yes,4x16 S19,uncited
 Jack Gibson,Eva Vasquez,Fling,6,10,6.0,10.0,,,yes,6x10 S19,cited
 Victoria Hughes,David Mayhorn,Fling,2,3,2.0,8.0,,,yes,2x03 S19;2x08 S19,cited

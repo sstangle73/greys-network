@@ -22,6 +22,10 @@ build:
     - pip install --quiet pandas
   script:
     - python greys_network.py --outdir .
+    # The tracker is a separate file that nothing regenerates, so it can be
+    # right the day it is written and quietly wrong forever after. It had
+    # drifted for thirty commits before anyone looked.
+    - python audit_apply.py check
     - python build_visualization.py --indir .
     - python build_table.py --indir .
   artifacts:

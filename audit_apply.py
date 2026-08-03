@@ -156,8 +156,71 @@ def sync(verify_shows=()):
     print(f"added {added} ties; {TRACKER}: {done} verified, {len(rows) - done} to go")
 
 
+def check():
+    """Fail if the tracker no longer matches edges.csv.
+
+    `verify` refreshes only the pairs you name and `sync` only appends, so a
+    tracker can be perfectly valid on the day it is written and quietly wrong
+    forever after. This one had drifted for thirty commits: four rows for ties
+    that had been deleted, and almost every episode still reading 1 from before
+    the episode numbers were filled in. The Verified column stayed true the
+    whole time, which is exactly what made it hard to notice -- the file looked
+    finished.
+
+    Cheap enough to run on every build, so the answer is never "nobody checked".
+    """
+    edges = load_edges()
+    with open(TRACKER, encoding="utf-8", newline="") as fh:
+        rows = list(csv.DictReader(fh))
+
+    problems = []
+    tracked = set()
+    for row in rows:
+        key = frozenset({row["Source"], row["Target"]})
+        tracked.add(key)
+        edge = edges.get(key)
+        if not edge:
+            problems.append(f"{row['Source']} & {row['Target']}: not in edges.csv")
+            continue
+        for field, want in (("Relationship_Type", edge["Relationship_Type"]),
+                            ("First_Season", edge["First_Season"]),
+                            ("First_Episode", edge["First_Episode"]),
+                            ("Last_Season", num(edge["Last_Season"])),
+                            ("Last_Episode", num(edge["Last_Episode"])),
+                            ("Married_Season", num(edge["Married_Season"])),
+                            ("Outcome", edge["Outcome"])):
+            if row.get(field, "") != want:
+                problems.append(f"{row['Source']} & {row['Target']}: "
+                                f"{field} is {row.get(field, '')!r}, edges.csv says {want!r}")
+    for key in set(edges) - tracked:
+        problems.append(f"{' & '.join(sorted(key))}: in edges.csv, missing from the tracker")
+
+    if problems:
+        print(f"{TRACKER} has drifted from edges.csv ({len(problems)} problem(s)):")
+        for p in problems[:20]:
+            print("  " + p)
+        if len(problems) > 20:
+            print(f"  ... and {len(problems) - 20} more")
+        print("\nFix: python audit_apply.py reconcile")
+        sys.exit(1)
+    print(f"{TRACKER}: in step with edges.csv ({len(rows)} ties)")
+
+
+def reconcile():
+    """Re-read every current tie from edges.csv, and drop the ones that are gone."""
+    names = []
+    for edge in load_edges().values():
+        names += [edge["Source"], edge["Target"]]
+    main(names)
+
+
 if __name__ == "__main__":
-    if sys.argv[1:2] == ["sync"]:
+    cmd = sys.argv[1:2]
+    if cmd == ["sync"]:
         sync(verify_shows=tuple(sys.argv[2:]))
+    elif cmd == ["check"]:
+        check()
+    elif cmd == ["reconcile"]:
+        reconcile()
     else:
-        main(sys.argv[2:] if sys.argv[1:2] == ["verify"] else sys.argv[1:])
+        main(sys.argv[2:] if cmd == ["verify"] else sys.argv[1:])
