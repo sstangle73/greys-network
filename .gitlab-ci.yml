@@ -123,7 +123,18 @@ drift:
     # where one partner is off screen (a divorce discussed without the ex-
     # spouse present), so this reports rather than gates.
     - python verify_citations.py || true
-    - python wiki_harvest.py drift
+    # Ask the API which of the 839 watched pages have been edited -- 17 requests,
+    # about fifteen seconds -- and re-download only those. This covers the
+    # EPISODE pages too, which nothing watched before: they are where every date
+    # and citation actually came from, so a correction there matters more than a
+    # new tie appearing on a character page.
+    - python revwatch.py check; RW=$?
+    # Reuses the cache revwatch just refreshed rather than re-fetching all 155
+    # character pages again.
+    - python wiki_harvest.py drift --no-refresh; DR=$?
+    # Both run, then the job fails if either found something. Chaining them with
+    # && would mean a revision change hid the drift report.
+    - test $RW -eq 0 -a $DR -eq 0
   artifacts:
     when: always
     expire_in: 30 days

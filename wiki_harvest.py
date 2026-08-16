@@ -255,6 +255,10 @@ ALIASES = {
     # Victoria Hughes dates.
     'Victoria "Vic" Hughes': "Victoria Hughes",
     "Allison Robin Brown": "Allison Brown",
+    # Two different men called Allan. This one is Adele's fellow resident at
+    # Roseridge; plain "Allan" is Violet Turner's ex, who is married to Cami
+    # Davis and appears in Private Practice. Without this they merge.
+    "Allan (Grey's Anatomy)": "Allan (Roseridge)",
     "Zola Grey Shepherd": "Zola Shepherd",
     "Derek Bailey Shepherd": "Bailey Shepherd",
     "Sofia Robbin Sloan Torres": "Sofia Robbin Sloan Torres",
@@ -547,11 +551,16 @@ def _is_placeholder(pair) -> bool:
     for n in pair:
         if n in PLACEHOLDERS or " and " in n or ROLE_WORDS.match(n):
             return True
-        # "Jenny (Season 14)" is the wiki disambiguating a duplicate name; it is
-        # the same candidate as plain "Jenny" and should not be reported twice.
-        if re.search(r"\((Season \d+|Grey's Anatomy|Station 19)\)$", n):
-            return True
     return False
+
+
+# A disambiguation suffix means the wiki has TWO people with one name, which is
+# the opposite of a placeholder -- it is the wiki being precise. Filtering these
+# as noise was a mistake caught immediately: "Allan (Grey's Anatomy)" is Adele
+# Webber's companion at Roseridge, an entirely different person from "Allan",
+# Violet Turner's ex. canonical() was collapsing both to "Allan" and merging two
+# people into one node, and filtering the suffixed form would have hidden the
+# evidence of it. Give them an ALIASES entry with a readable short form instead.
 
 
 def _key(pair) -> str:
@@ -575,7 +584,7 @@ def _save_state(state: dict) -> None:
         json.dump(state, fh, indent=1, sort_keys=True)
 
 
-def drift(edges_path="edges.csv", report="drift_report.md") -> int:
+def drift(edges_path="edges.csv", report="drift_report.md", refresh=True) -> int:
     """Harvest, parse and diff in one pass, then write a report.
 
     Meant for a scheduled pipeline. Season 22 is still airing and the wiki keeps
@@ -587,7 +596,12 @@ def drift(edges_path="edges.csv", report="drift_report.md") -> int:
     # Always re-fetch. See harvest(): a restored cache otherwise means this
     # diffs the same bytes against themselves week after week.
     all_seeds = seeds(edges_path)
-    fetched, reused, missing, failed = harvest(all_seeds, max_age_days=0)
+    # refresh=False is for the pipeline, where revwatch.py has already asked the
+    # API which pages moved and re-downloaded exactly those. Re-fetching all 155
+    # again here would be the same 2.6 minutes of requests the revision check
+    # exists to avoid.
+    fetched, reused, missing, failed = harvest(
+        all_seeds, max_age_days=0 if refresh else None)
     # A wiki outage must not read as mass deletion. If a chunk of the seeds did
     # not come back, every tie on those pages would vanish from the parse and
     # the report would claim they were removed -- so refuse to diff at all.
@@ -761,6 +775,9 @@ if __name__ == "__main__":
     ap.add_argument("command",
                     choices=["harvest", "parse", "diff", "drift", "accept"])
     ap.add_argument("--edges", default="edges.csv")
+    ap.add_argument("--no-refresh", action="store_true",
+                    help="use the cache as-is; revwatch.py has already "
+                         "refreshed whatever changed")
     args = ap.parse_args()
 
     if args.command == "harvest":
@@ -768,7 +785,7 @@ if __name__ == "__main__":
     elif args.command == "parse":
         parse()
     elif args.command == "drift":
-        sys.exit(drift(args.edges))
+        sys.exit(drift(args.edges, refresh=not args.no_refresh))
     elif args.command == "accept":
         sys.exit(accept(args.edges))
     else:

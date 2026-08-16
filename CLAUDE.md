@@ -380,6 +380,34 @@ as mass deletion. `accept` is stricter still: it refuses on *any* failure,
 since a baseline recorded from an incomplete harvest silently suppresses real
 alerts later.
 
+## revwatch.py watches everything, cheaply
+
+The drift check only ever looked at character pages — the weaker source, whose
+prose is uncited and whose episode codes are documented as unreliable. Every
+date and citation in this dataset actually came from **episode** pages, and
+nothing was watching those at all. A wrong episode number being corrected, or a
+citation being added, happens on a page that already looks complete, and that
+is the edit most likely to mean this dataset is now wrong.
+
+Re-downloading all 839 pages weekly at the one-second pause is fourteen minutes
+of requests against a volunteer-run wiki to discover that almost nothing
+changed. So `revwatch.py` asks the API which revision each page is on —
+**fifty titles per request, so the whole corpus costs 17 requests and about
+fifteen seconds** — and re-downloads only the pages whose revision id moved.
+
+`wiki_harvest.py drift --no-refresh` then reuses that freshly-updated cache
+instead of re-fetching all 155 character pages again.
+
+An earlier version of this watched only the 59 episode pages with no summary,
+on the theory that a page with content only changes in ways that do not matter.
+That is wrong in exactly the case that matters most — someone *correcting* a
+page. Watching only the empty pages catches new information and misses every
+correction.
+
+`revision_baseline.json` is committed, same as the drift baseline, and for the
+same reason: clearing it is a judgement, so it belongs in a diff. Nothing in CI
+writes it.
+
 A scheduled run also rebuilds and redeploys the site. That is intentional — it
 refreshes the portrait cache — and a drift failure does not block it, because
 `pages` needs `build` and `test`, not `drift`. Verified: the run that surfaced

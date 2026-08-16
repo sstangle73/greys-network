@@ -61,6 +61,9 @@ DEATHS = {
     # PRONOUNCEMENT: George is hit by a bus in 5x24 and declared brain dead in
     # 6x01; Mark crashes in 8x24 and comes off life support in 9x01.
     "Denny Duquette": ("GA", 2, 27),
+    # Dies on the table at 12x23, which is also what ends his relationship
+    # with Stephanie -- the two are derived from each other, not typed twice.
+    "Kyle Diaz": ("GA", 12, 23),
     "Ellis Grey": ("GA", 3, 17),
     "Susan Grey": ("GA", 3, 23),
     "George O'Malley": ("GA", 6, 1),
@@ -311,6 +314,12 @@ def _romantic_edges() -> List[Tuple]:
         ("George O'Malley", "Izzie Stevens", "Dating", (3, 25), (4, 10)),
         ("Izzie Stevens", "Denny Duquette", "Dating", (2, 27), (2, 27)),
         ("Izzie Stevens", "Alex Karev", "Married", (2, 5), (6, 21)),
+        # 9x01 supply closet; he ghosts her by 9x06.
+        ("Alex Karev", "Leah Murphy", "Fling", (9, 1), (9, 6)),
+        # Hank is on screen for exactly one episode, 1x05. Nothing ends it
+        # there -- he leaves after a row about her hours -- so the end is
+        # season 1 with the episode unknown, held to the season close.
+        ("Izzie Stevens", "Hank", "Dating", (1, 5), (1, 1)),
         ("Alex Karev", "Olivia Harper", "Fling", (2, 10), (2, 1)),
         ("Alex Karev", "Rebecca Pope", "Dating", (4, 10), (4, 17)),
         ("Alex Karev", "Lexie Grey", "Dating", (4, 6), (6, 24)),
@@ -367,6 +376,10 @@ def _romantic_edges() -> List[Tuple]:
         ("Jackson Avery", "Lexie Grey", "Dating", (7, 20), (8, 8)),
         ("Jackson Avery", "Mara Keaton", "Fling", (8, 17), (8, 1)),
         ("Jackson Avery", "Stephanie Edwards", "Dating", (9, 10), (10, 12)),
+        # Found only once the harvest seeds were derived from the data --
+        # the hand-written seed list never fetched either page. 12x20 is the
+        # studio date; it ends when he dies on the table at 12x23.
+        ("Stephanie Edwards", "Kyle Diaz", "Dating", (12, 20), (12, 23)),
         ("Jackson Avery", "Priya", "Dating", (14, 13), (14, 14)),
         ("Jackson Avery", "Jo Wilson", "Fling", (17, 4), (17, 15)),
         ("Jackson Avery", "Maggie Pierce", "Dating", (14, 14), (16, 1)),
@@ -390,6 +403,10 @@ def _romantic_edges() -> List[Tuple]:
         # 2x02: Derek calls Richard's wife to get him discharged and Adele
         # walks in. She is not named or mentioned anywhere in season 1.
         ("Richard Webber", "Adele Webber", "Married", (2, 2), (9, 10)),
+        # NOT the "Allan" who is Violet Turner's ex -- the wiki has two men
+        # of that name and canonical() was merging them into one node. This
+        # one is her fellow Alzheimer's resident at Roseridge.
+        ("Adele Webber", "Allan (Roseridge)", "Dating", (8, 20), (9, 10)),
         ("Richard Webber", "Ellis Grey", "Fling", (2, 15), (3, 17)),
         ("Richard Webber", "Catherine Fox", "Married", (8, 23), None),
         # The divorce predates the series by ~20 years and is only ever narrated.
@@ -656,6 +673,8 @@ def _episode_is_known() -> List[dict]:
         {"Source": "Jo Wilson", "Target": "Levi Schmitt"},
         # The bath scene that starts the real relationship, PP 4x01.
         {"Source": "Addison Montgomery", "Target": "Sam Bennett"},
+        # Supply-closet kiss in the season 9 premiere.
+        {"Source": "Alex Karev", "Target": "Leah Murphy"},
         # Breakfast in bed and a kiss in the lobby, PP 6x01.
         {"Source": "Sam Bennett", "Target": "Stephanie Kemp"},
         # 18x01 is where the viewer is told it happened -- see the edge.
