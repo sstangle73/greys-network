@@ -358,6 +358,28 @@ alarm would make the alarm meaningless.
 This whole class of bug only appears when you *run* the thing: everything
 passed locally, because locally nothing fails.
 
+**`drift` and `accept` must call `harvest(max_age_days=0)`.** `harvest()` skips
+any page already in the cache — correct for local work, catastrophic for a
+scheduled check. The first scheduled run restored the CI cache, served all 68
+pages from it, fetched **zero**, and reported a confident *"Nothing changed on
+the wiki since the last run."* It would have said that forever. A green light
+wired to nothing is worse than no light: it actively tells you not to look.
+
+Note the irony worth remembering — the earlier *cache flakiness was hiding
+this*. While the cache failed to restore, every run re-downloaded and the check
+worked by accident. Fixing the cache broke the checker. When you fix an
+infrastructure problem, re-check the things that were silently depending on it
+being broken.
+
+Two guards go with it, because always-fetching introduces a failure mode that
+skip-if-present did not have. A page is written only on success, so a failed
+fetch leaves the older copy (stale beats absent — a missing page reads as
+"every tie on it was deleted"). And if more than a fifth of the seeds fail,
+`drift` exits 2 and refuses to diff at all rather than reporting a wiki outage
+as mass deletion. `accept` is stricter still: it refuses on *any* failure,
+since a baseline recorded from an incomplete harvest silently suppresses real
+alerts later.
+
 A scheduled run also rebuilds and redeploys the site. That is intentional — it
 refreshes the portrait cache — and a drift failure does not block it, because
 `pages` needs `build` and `test`, not `drift`. Verified: the run that surfaced

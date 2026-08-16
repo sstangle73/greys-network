@@ -126,21 +126,45 @@ def fetch_wikitext(title: str) -> str:
         return _fetch_api(title)
 
 
-def harvest(titles=None) -> None:
+def harvest(titles=None, max_age_days=None):
+    """Download the seed pages, skipping ones already cached.
+
+    max_age_days re-fetches anything older than that; 0 means always.
+
+    THE DRIFT CHECK MUST PASS THIS. Skip-if-present is right for local work --
+    it is what makes re-running parse() free -- and it is catastrophic for a
+    scheduled check, because a restored CI cache means nothing is ever
+    re-downloaded and the job re-parses identical bytes forever. The first
+    scheduled run did exactly that: 68 pages served from cache, 0 fetched, and
+    a confident "Nothing changed on the wiki since the last run". A green light
+    wired to nothing is worse than no light at all.
+
+    Returns (fetched, reused, failed_titles) so callers can refuse to diff
+    against a half-downloaded cache.
+    """
     os.makedirs(CACHE, exist_ok=True)
+    fetched, reused, failed = 0, 0, []
+    cutoff = None if max_age_days is None else time.time() - max_age_days * 86400
     for title in (titles or SEEDS):
         path = os.path.join(CACHE, title.replace("/", "_") + ".wiki")
-        if os.path.exists(path):
+        if os.path.exists(path) and (cutoff is None or os.path.getmtime(path) > cutoff):
             print(f"  cached  {title}")
+            reused += 1
             continue
         try:
             text = fetch_wikitext(title)
+            # Written only on success, so a failed fetch leaves the previous
+            # copy in place. Stale is a better failure than absent: a missing
+            # page looks like every tie on it was deleted.
             with open(path, "w", encoding="utf-8") as fh:
                 fh.write(text)
+            fetched += 1
             print(f"  got     {title}  ({len(text) // 1024}KB)")
         except Exception as exc:
+            failed.append(title)
             print(f"  FAILED  {title}: {exc}", file=sys.stderr)
         time.sleep(PAUSE)
+    return fetched, reused, failed
 
 
 # --------------------------------------------------------------------------- #
@@ -486,7 +510,20 @@ def drift(edges_path="edges.csv", report="drift_report.md") -> int:
     makes the pipeline fail -- and a failed pipeline is already an email, so
     this needs no API token and no bot account.
     """
-    harvest()
+    # Always re-fetch. See harvest(): a restored cache otherwise means this
+    # diffs the same bytes against themselves week after week.
+    fetched, reused, failed = harvest(max_age_days=0)
+    # A wiki outage must not read as mass deletion. If a chunk of the seeds did
+    # not come back, every tie on those pages would vanish from the parse and
+    # the report would claim they were removed -- so refuse to diff at all.
+    if failed and len(failed) > max(3, len(SEEDS) // 5):
+        print(f"ABORTING: {len(failed)} of {len(SEEDS)} pages failed to fetch "
+              f"({', '.join(failed[:5])}...). Diffing now would report every tie "
+              f"on them as removed.", file=sys.stderr)
+        return 2
+    if failed:
+        print(f"NOTE: {len(failed)} page(s) failed and are being read from an "
+              f"older copy: {', '.join(failed)}")
     parse()
 
     mine = defaultdict(set)
@@ -609,7 +646,13 @@ def accept(edges_path="edges.csv") -> int:
     the decision -- which is the point. Nothing in CI writes this file; if a job
     could clear its own alert, the alert would mean nothing.
     """
-    harvest()
+    fetched, reused, failed = harvest(max_age_days=0)
+    if failed:
+        print(f"REFUSING to set a baseline: {len(failed)} page(s) failed to "
+              f"fetch ({', '.join(failed)}). A baseline recorded from an "
+              f"incomplete harvest would suppress real alerts later.",
+              file=sys.stderr)
+        return 2
     parse()
     theirs = {}
     with open("candidate_edges.csv", encoding="utf-8") as fh:
