@@ -84,11 +84,56 @@ SEEDS_BY_SHOW = {
     ],
 }
 
-SEEDS = [title for titles in SEEDS_BY_SHOW.values() for title in titles]
+BASE_SEEDS = [title for titles in SEEDS_BY_SHOW.values() for title in titles]
 
-# Which show a cached page's episode codes belong to.
-SHOW_OF_PAGE = {title: show for show, titles in SEEDS_BY_SHOW.items()
-                for title in titles}
+
+def seeds(edges_path="edges.csv"):
+    """The hand-written hubs, plus everyone already in a romantic tie.
+
+    The hand list alone was 68 pages against 187 people in the graph. That
+    sounds worse than it measured -- 157 of 158 ties had a seed on one side, so
+    a change would surface through that side's page -- but the one exception is
+    the whole argument: Nicole Herman & Graham Maddox, neither of them a hub,
+    invisible to the check. It is also the tie a character-page audit once
+    recommended DELETING because it "appears nowhere in the cache". It was not
+    in the cache because nobody had ever fetched either page.
+
+    So the seed list is derived from the data it is meant to police. A tie
+    between two recurring characters is exactly the kind the hand list misses,
+    and exactly the kind nobody thinks to add to a hand list.
+
+    Falls back to the hand list if edges.csv is not there yet (a fresh clone
+    harvests before it can build).
+    """
+    out = list(BASE_SEEDS)
+    seen = set(out)
+    try:
+        with open(edges_path, encoding="utf-8") as fh:
+            rows = [r for r in csv.DictReader(fh)
+                    if r["Relationship_Type"] != "Parent"]
+    except OSError:
+        return out
+    # The dataset stores short forms; the wiki is keyed on article titles, so
+    # go back through the alias table rather than requesting a page that 404s.
+    #
+    # Inverting ALIASES is ambiguous -- two titles map to Addison, and naively
+    # taking the last one asked for "Addison Shepherd", a redirect that 404s on
+    # action=raw, for someone already in the hand list under her real title.
+    # So track who is covered by DATASET NAME, not by page title.
+    to_title = {}
+    for title, name in ALIASES.items():
+        to_title.setdefault(name, title)
+    covered = {ALIASES.get(t, t) for t in BASE_SEEDS}
+    for row in rows:
+        for name in (row["Source"], row["Target"]):
+            if name in covered:
+                continue
+            covered.add(name)
+            title = to_title.get(name, name)
+            if title not in seen:
+                seen.add(title)
+                out.append(title)
+    return out
 
 
 # --------------------------------------------------------------------------- #
@@ -121,6 +166,11 @@ def fetch_wikitext(title: str) -> str:
     try:
         return _fetch_raw(title)
     except urllib.error.HTTPError as exc:
+        if exc.code == 404:
+            # Distinct from a transport failure, and the callers must not
+            # conflate them: "this article does not exist" is a permanent fact
+            # about our seed list, while "the request failed" is about today.
+            raise LookupError(f"no such page: {title}") from exc
         if exc.code not in (403, 429):
             raise
         return _fetch_api(title)
@@ -139,13 +189,16 @@ def harvest(titles=None, max_age_days=None):
     a confident "Nothing changed on the wiki since the last run". A green light
     wired to nothing is worse than no light at all.
 
-    Returns (fetched, reused, failed_titles) so callers can refuse to diff
-    against a half-downloaded cache.
+    Returns (fetched, reused, missing, failed). `missing` is 404s -- articles
+    that do not exist, which is a fact about the seed list and not about the
+    network. Keeping them apart matters: once the seeds are derived from the
+    data, a batch of unknown article titles would otherwise look exactly like
+    the wiki being down.
     """
     os.makedirs(CACHE, exist_ok=True)
-    fetched, reused, failed = 0, 0, []
+    fetched, reused, missing, failed = 0, 0, [], []
     cutoff = None if max_age_days is None else time.time() - max_age_days * 86400
-    for title in (titles or SEEDS):
+    for title in (titles if titles is not None else seeds()):
         path = os.path.join(CACHE, title.replace("/", "_") + ".wiki")
         if os.path.exists(path) and (cutoff is None or os.path.getmtime(path) > cutoff):
             print(f"  cached  {title}")
@@ -160,11 +213,14 @@ def harvest(titles=None, max_age_days=None):
                 fh.write(text)
             fetched += 1
             print(f"  got     {title}  ({len(text) // 1024}KB)")
+        except LookupError as exc:
+            missing.append(title)
+            print(f"  NO PAGE {title}", file=sys.stderr)
         except Exception as exc:
             failed.append(title)
             print(f"  FAILED  {title}: {exc}", file=sys.stderr)
         time.sleep(PAUSE)
-    return fetched, reused, failed
+    return fetched, reused, missing, failed
 
 
 # --------------------------------------------------------------------------- #
@@ -194,6 +250,11 @@ ALIASES = {
     "Denny Duquette, Jr.": "Denny Duquette",
     "Penelope Blake": "Penny Blake",
     "Olivia Jankovic": "Olivia Harper",
+    # The wiki puts the on-screen nickname inside the article title, so this
+    # came back as a brand-new person who happened to be dating everyone
+    # Victoria Hughes dates.
+    'Victoria "Vic" Hughes': "Victoria Hughes",
+    "Allison Robin Brown": "Allison Brown",
     "Zola Grey Shepherd": "Zola Shepherd",
     "Derek Bailey Shepherd": "Bailey Shepherd",
     "Sofia Robbin Sloan Torres": "Sofia Robbin Sloan Torres",
@@ -472,12 +533,25 @@ EXCLUDED = {
 
 # Not people. The parser picks these out of infobox rows that describe a partner
 # rather than naming one, and they can never resolve to a character page.
-PLACEHOLDERS = {"Others", "Ex-Wife", "Ex-Husband", "High School Girlfriend",
-                "High School Boyfriend", "Unnamed", "Unknown"}
+PLACEHOLDERS = {"Others", "Exes", "Unnamed", "Unknown", "Wrecking Ball"}
+
+# A generic role where a name should be. The wiki uses these in infobox rows
+# for partners it will not name, and they arrive looking exactly like people.
+ROLE_WORDS = re.compile(
+    r"^(ex[- ])?(wife|husband|fianc|girlfriend|boyfriend|partner|spouse|"
+    r"past girlfriend|past boyfriend|high school (girl|boy)friend)",
+    re.IGNORECASE)
 
 
 def _is_placeholder(pair) -> bool:
-    return any(n in PLACEHOLDERS or " and " in n for n in pair)
+    for n in pair:
+        if n in PLACEHOLDERS or " and " in n or ROLE_WORDS.match(n):
+            return True
+        # "Jenny (Season 14)" is the wiki disambiguating a duplicate name; it is
+        # the same candidate as plain "Jenny" and should not be reported twice.
+        if re.search(r"\((Season \d+|Grey's Anatomy|Station 19)\)$", n):
+            return True
+    return False
 
 
 def _key(pair) -> str:
@@ -512,18 +586,29 @@ def drift(edges_path="edges.csv", report="drift_report.md") -> int:
     """
     # Always re-fetch. See harvest(): a restored cache otherwise means this
     # diffs the same bytes against themselves week after week.
-    fetched, reused, failed = harvest(max_age_days=0)
+    all_seeds = seeds(edges_path)
+    fetched, reused, missing, failed = harvest(all_seeds, max_age_days=0)
     # A wiki outage must not read as mass deletion. If a chunk of the seeds did
     # not come back, every tie on those pages would vanish from the parse and
     # the report would claim they were removed -- so refuse to diff at all.
-    if failed and len(failed) > max(3, len(SEEDS) // 5):
-        print(f"ABORTING: {len(failed)} of {len(SEEDS)} pages failed to fetch "
+    # Only TRANSPORT failures count here; a 404 is a naming problem, reported
+    # further down, and must not be able to mask an outage or fake one.
+    if failed and len(failed) > max(3, len(all_seeds) // 5):
+        print(f"ABORTING: {len(failed)} of {len(all_seeds)} pages failed to fetch "
               f"({', '.join(failed[:5])}...). Diffing now would report every tie "
               f"on them as removed.", file=sys.stderr)
         return 2
     if failed:
         print(f"NOTE: {len(failed)} page(s) failed and are being read from an "
               f"older copy: {', '.join(failed)}")
+    # A 404 means the dataset's name for someone is not the wiki's article
+    # title. Harmless to the diff -- that person simply is not watched -- but
+    # it is a silent hole unless it is said out loud, so it goes in the report
+    # with the fix named: add them to ALIASES.
+    if missing:
+        print(f"NOTE: {len(missing)} name(s) have no wiki article and are not "
+              f"being watched. Add an ALIASES entry if the article exists under "
+              f"another title: {', '.join(missing)}")
     parse()
 
     mine = defaultdict(set)
@@ -646,7 +731,7 @@ def accept(edges_path="edges.csv") -> int:
     the decision -- which is the point. Nothing in CI writes this file; if a job
     could clear its own alert, the alert would mean nothing.
     """
-    fetched, reused, failed = harvest(max_age_days=0)
+    fetched, reused, missing, failed = harvest(seeds(edges_path), max_age_days=0)
     if failed:
         print(f"REFUSING to set a baseline: {len(failed)} page(s) failed to "
               f"fetch ({', '.join(failed)}). A baseline recorded from an "
