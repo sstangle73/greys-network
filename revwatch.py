@@ -135,21 +135,41 @@ def check(accept=False):
               f"Run `python revwatch.py accept` and commit it to set the baseline.")
         return 1
 
+    # Only pages we actually ASKED about can be reported missing. The episode
+    # cache is gitignored, so in CI watched() sees character pages only -- and
+    # the first scheduled run under this script duly announced that all 681
+    # episode pages had been deleted from the wiki. "We did not look" is not
+    # "it is gone", and this is the second time that exact confusion has bitten
+    # this project; the harvest outage guard exists for the same reason.
+    scope = set(pages)
     changed = [t for t, r in now.items() if t in prior and prior[t] != r]
     added = [t for t in now if t not in prior]
-    gone = [t for t in prior if t not in now]
+    gone = [t for t in prior if t in scope and t not in now]
+    unchecked = [t for t in prior if t not in scope]
+
+    # Backstop for whatever the next version of that mistake looks like.
+    if gone and len(gone) > max(5, len(scope) // 5):
+        print(f"\nABORTING: {len(gone)} of {len(scope)} watched page(s) came back "
+              f"missing. That is far more likely to be a bad watch list or an API "
+              f"problem than the wiki deleting them, and reporting it as deletion "
+              f"would be worse than reporting nothing.", file=sys.stderr)
+        return 2
 
     # Re-download only what moved, so the next parse reads the new text. This is
     # the entire point: the corpus stays current without re-fetching all of it.
     filled, failed = [], []
     for title in changed + added:
         kind, path = pages[title]
+        had_copy = os.path.exists(path)
         try:
             before, after = refresh(title, kind, path)
         except Exception as exc:
             failed.append(f"{title} ({exc})")
             continue
-        if kind == "episode" and before < STUB_CHARS <= after:
+        # Only a page we HAD, and which had no summary, can be said to have
+        # gained one. Without the had_copy test every episode page downloaded
+        # for the first time reports as newly written.
+        if kind == "episode" and had_copy and before < STUB_CHARS <= after:
             filled.append((title, before, after))
         time.sleep(PAUSE)
 
@@ -157,6 +177,13 @@ def check(accept=False):
     print(f"  new     : {len(added)}")
     print(f"  gone    : {len(gone)}")
     print(f"  no page : {len(missing)}")
+    if unchecked:
+        # Said out loud rather than silently narrowed: a watch list that has
+        # quietly shrunk looks exactly like a wiki that has stopped changing.
+        print(f"  NOT CHECKED: {len(unchecked)} page(s) in the baseline are not "
+              f"available locally, so they were not looked at. On CI this is "
+              f"normal for episode pages unless episodecache/index.csv is "
+              f"present.")
     if failed:
         print(f"  re-download FAILED for {len(failed)}: {', '.join(failed[:5])}")
 

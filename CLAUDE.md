@@ -404,6 +404,25 @@ That is wrong in exactly the case that matters most — someone *correcting* a
 page. Watching only the empty pages catches new information and misses every
 correction.
 
+**`episodecache/index.csv` is committed on purpose**, and the `.gitignore`
+entry has to be `episodecache/*` rather than `episodecache/` — a negation
+cannot escape an ignored *directory*, because git never descends into one. The
+index is Show/Season/Episode/Title, which is facts, not the CC-BY-SA prose the
+rest of the directory holds. Without it in CI the watch list silently shrank to
+character pages and the job announced that all 681 episode pages had been
+deleted from the wiki.
+
+That is the same confusion as the harvest outage guard, in a new costume:
+**"we did not look" is not "it is gone."** `revwatch` now only reports a page
+missing if it was in scope to begin with, says out loud how many it could not
+check, and refuses outright if more than a fifth of the watched set comes back
+missing.
+
+**A GitLab `script:` runs under `set -e`, so `cmd; VAR=$?` does not capture an
+exit code** — the job aborts on the failing command and never reaches the
+assignment. That is why the first failing scheduled run produced no drift
+report at all: only the first of the two checks ever ran. Use `cmd || VAR=$?`.
+
 `revision_baseline.json` is committed, same as the drift baseline, and for the
 same reason: clearing it is a judgement, so it belongs in a diff. Nothing in CI
 writes it.

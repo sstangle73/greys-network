@@ -17,4 +17,11 @@ drift_report.md
 
 # Episode-page cache: same reasoning as wikicache -- CC-BY-SA prose we read
 # facts out of, never republish.
-episodecache/
+episodecache/*
+# ...except the index, which is Show/Season/Episode/Title -- facts, not the
+# CC-BY-SA prose the rest of the directory holds. revwatch.py needs it to know
+# WHICH episode pages to ask the API about, and without it in CI the watch list
+# silently shrank to character pages and reported all 681 episodes as deleted.
+# A negation cannot escape an ignored DIRECTORY, so the glob has to be the
+# entry rather than `episodecache/`.
+!episodecache/index.csv
