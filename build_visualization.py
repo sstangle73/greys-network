@@ -686,7 +686,8 @@ TEMPLATE = r"""<!DOCTYPE html>
     <div class="credit">
       Inspired by <a href="https://itsdatadana.com/" target="_blank" rel="noopener noreferrer">Dana&rsquo;s romantic web</a>,
       whose scope rules this dataset follows.
-      Facts from the <a href="https://greysanatomy.fandom.com/" target="_blank" rel="noopener noreferrer">Grey&rsquo;s Anatomy Universe Wiki</a> (CC BY-SA).
+      Facts from the <a href="https://greysanatomy.fandom.com/" target="_blank" rel="noopener noreferrer">Grey&rsquo;s Anatomy Universe Wiki</a> (CC BY-SA);
+      the dataset is published under the same licence, the code under MIT.
       Character images are screencaps from <i>Grey&rsquo;s Anatomy</i>,
       <i>Station&nbsp;19</i> and <i>Private Practice</i>, &copy;&nbsp;ABC
       Studios / Shondaland, used here to identify the characters they depict.

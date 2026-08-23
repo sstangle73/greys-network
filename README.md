@@ -151,10 +151,28 @@ are fetched at deploy time rather than committed, so removing them is a one-line
 change rather than a history rewrite.
 
 Character names and the underlying works are the property of their respective
-rights holders. This is a non-commercial fan project with no affiliation to ABC,
-Shondaland, or Disney.
+rights holders. This is an unofficial fan project with no affiliation to ABC,
+Shondaland, or Disney. Nothing here is sold — the chart, the dataset and the
+source are free, there are no ads and no trackers, and the tip jar supports the
+maintainer's time rather than buying access to anything.
 
-Code is MIT licensed; see `LICENSE`.
+## Licensing, in two halves
+
+**Code is MIT** — see `LICENSE`. Do what you like with it.
+
+**Data is CC BY-SA 3.0** — see `LICENSE-DATA`. That mirrors the Grey's Anatomy
+Universe Wiki it was derived from, so the share-alike obligation keeps flowing
+the way its contributors intended. It covers the CSVs, the baselines, and the
+relationship data embedded in `greys_network.py` and the published pages.
+
+Strictly, the facts here — who dated whom, in which episode — are probably not
+copyrightable at all, and under US law a database of them would not be protected
+on effort alone. Share-alike is the courteous answer rather than the minimum
+defensible one.
+
+The character images are covered by neither licence: they are screencaps
+belonging to ABC Studios / Shondaland, used to identify the characters they
+depict, and this project claims no rights in them.
 
 ## Buy me a coffee
 

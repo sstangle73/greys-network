@@ -1,0 +1,33 @@
+Dataset licence
+===============
+
+The DATA in this repository is licensed CC BY-SA 3.0 -- the same licence as the
+source it is derived from.
+
+    https://creativecommons.org/licenses/by-sa/3.0/
+
+COVERS
+    edges.csv, nodes.csv, shows.csv, citations.csv, audit_tracker.csv,
+    drift_baseline.json, revision_baseline.json, episodecache/index.csv,
+    the relationship data embedded as Python literals in greys_network.py,
+    and the same data as published in greys_network.html and table.html.
+
+DOES NOT COVER
+    The code, which is MIT -- see LICENSE.
+    The character images on the deployed site, which are screencaps
+    (c) ABC Studios / Shondaland and are not licensed by this project at all.
+    See the README.
+
+ATTRIBUTION
+    Derived from the Grey's Anatomy Universe Wiki
+    (https://greysanatomy.fandom.com/), CC BY-SA 3.0, with thanks to its
+    contributors. Scope rules follow Dana's "romantic web"
+    (https://itsdatadana.com/).
+
+WHY SHARE-ALIKE AND NOT PUBLIC DOMAIN
+    Strictly, the facts here -- who dated whom, in which episode -- are probably
+    not copyrightable, and under US law (Feist) a database of them would not be
+    protected on effort alone. Share-alike is therefore the courteous answer
+    rather than the minimum defensible one: the source is BY-SA, the selection
+    and arrangement is where the work went, and mirroring the licence keeps the
+    obligation flowing the way the wiki's contributors intended.

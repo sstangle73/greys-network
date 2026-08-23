@@ -328,7 +328,8 @@ TEMPLATE = """<!DOCTYPE html>
     <a href="https://buymeacoffee.com/stevenstorie">buy me a coffee</a> &#9749;</p>
     Inspired by <a href="https://itsdatadana.com/">Dana's romantic web</a>, whose
     scope rules this dataset follows. Facts from the
-    <a href="https://greysanatomy.fandom.com/">Grey's Anatomy Universe Wiki</a> (CC&nbsp;BY-SA).
+    <a href="https://greysanatomy.fandom.com/">Grey's Anatomy Universe Wiki</a> (CC&nbsp;BY-SA);
+    the dataset is published under the same licence, the code under MIT.
     <a href="https://gitlab.com/sstangle73/greys-network">Source &amp; data</a>.
   </footer>
 </main>
