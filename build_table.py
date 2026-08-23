@@ -219,6 +219,10 @@ TEMPLATE = """<!DOCTYPE html>
   .conf-unrecorded {{ border-color: var(--muted); color: var(--muted); }}
   .legend {{ font-size: 12.5px; color: var(--muted); display: grid; gap: 5px; }}
   footer {{ margin-top: 40px; font-size: 12px; color: var(--muted); }}
+  .coffee {{ font-size: 13px; color: var(--bone); margin: 0 0 10px; }}
+  .coffee a {{ color: var(--gold); font-weight: 600; text-decoration: none;
+              border-bottom: 1px solid var(--gold); }}
+  .coffee a:hover, .coffee a:focus-visible {{ color: var(--bone); border-color: var(--bone); }}
 
   /* Filtering is an ENHANCEMENT. This page's whole point is that it works with
      no scripting, so the controls stay hidden until the script proves it ran.
@@ -319,6 +323,9 @@ TEMPLATE = """<!DOCTYPE html>
   </div>
 
   <footer>
+    <p class="coffee">The chart and the data stay free. If it settled an argument
+    about who dated whom, you can
+    <a href="https://buymeacoffee.com/stevenstorie">buy me a coffee</a> &#9749;</p>
     Inspired by <a href="https://itsdatadana.com/">Dana's romantic web</a>, whose
     scope rules this dataset follows. Facts from the
     <a href="https://greysanatomy.fandom.com/">Grey's Anatomy Universe Wiki</a> (CC&nbsp;BY-SA).

@@ -168,6 +168,21 @@ check('filters are reflected in the URL', /show=/.test(window.location.hash),
         (row.dataset.names || '').includes(link.textContent.toLowerCase().split(' ')[0]));
 }
 
+// -- support link ----------------------------------------------------------
+// Cheap to assert, easy to lose: it lives inside a template string in each
+// builder, so a refactor can drop it without anything else noticing.
+{
+  const chart = fs.readFileSync('greys_network.html', 'utf8');
+  const URL_RE = /https:\/\/buymeacoffee\.com\/stevenstorie/;
+  check('table has the support link', URL_RE.test(html));
+  check('chart has the support link', URL_RE.test(chart));
+  // It opens in a new tab on the chart, so it needs the opener guard.
+  const tag = chart.match(/<a href="https:\/\/buymeacoffee[^>]*>/);
+  check('chart support link is rel-guarded',
+        !!tag && /target="_blank"/.test(tag[0]) && /noopener/.test(tag[0]),
+        tag ? tag[0] : 'no anchor');
+}
+
 // -- the E01 regression -----------------------------------------------------
 // Episode 1 used to be suppressed on the assumption it was always a placeholder.
 // Once the known-flags were filled in, that made real premieres read as vaguer

@@ -397,6 +397,18 @@ TEMPLATE = r"""<!DOCTYPE html>
     font-family: 'IBM Plex Mono', monospace; font-size: 9.5px; line-height: 1.7;
     color: var(--muted);
   }
+  /* Deliberately ABOVE the credits and a size up from them: the credits are
+     legal small print nobody reads, and burying an ask in small print is how
+     you get neither read. Still quiet -- one line, no button, no colour block. */
+  .coffee {
+    margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--rule);
+    font-size: 11px; line-height: 1.6; color: var(--bone);
+  }
+  .coffee a {
+    color: var(--married); font-weight: 600; text-decoration: none;
+    border-bottom: 1px solid var(--married);
+  }
+  .coffee a:hover, .coffee a:focus-visible { color: var(--bone); border-color: var(--bone); }
   .credit a { color: var(--dating); text-decoration: none; }
   .credit a:hover { text-decoration: underline; }
   .trace-form input:focus { outline: 2px solid var(--dating); outline-offset: 1px; }
@@ -665,6 +677,11 @@ TEMPLATE = r"""<!DOCTYPE html>
       <span><i class="dot" style="background:#E8EDE9"></i> Alive</span>
       <span><i class="dot" style="background:transparent;border:2px solid #7FA3A0"></i> Deceased</span>
       <span><i class="dot" style="background:#4FC3D9;width:7px;height:7px"></i> Child</span>
+    </div>
+    <div class="coffee">
+      The chart and the data stay free. If it settled an argument about who
+      dated whom, you can
+      <a href="https://buymeacoffee.com/stevenstorie" target="_blank" rel="noopener noreferrer">buy me a coffee</a> &#9749;
     </div>
     <div class="credit">
       Inspired by <a href="https://itsdatadana.com/" target="_blank" rel="noopener noreferrer">Dana&rsquo;s romantic web</a>,

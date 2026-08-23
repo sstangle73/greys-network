@@ -155,3 +155,13 @@ rights holders. This is a non-commercial fan project with no affiliation to ABC,
 Shondaland, or Disney.
 
 Code is MIT licensed; see `LICENSE`.
+
+## Buy me a coffee
+
+The chart, the data and the source all stay free — nothing here is sold, and
+there are no ads or trackers on the site.
+
+What it cost was time: 162 romantic ties read off the wiki and checked against
+681 episode pages, one at a time, because the shortcuts were all wrong. If it
+settled an argument about who dated whom, or saved you a rewatch,
+[buy me a coffee](https://buymeacoffee.com/stevenstorie) ☕
