@@ -670,6 +670,10 @@ TEMPLATE = r"""<!DOCTYPE html>
       Inspired by <a href="https://itsdatadana.com/" target="_blank" rel="noopener noreferrer">Dana&rsquo;s romantic web</a>,
       whose scope rules this dataset follows.
       Facts from the <a href="https://greysanatomy.fandom.com/" target="_blank" rel="noopener noreferrer">Grey&rsquo;s Anatomy Universe Wiki</a> (CC BY-SA).
+      Character images are screencaps from <i>Grey&rsquo;s Anatomy</i>,
+      <i>Station&nbsp;19</i> and <i>Private Practice</i>, &copy;&nbsp;ABC
+      Studios / Shondaland, used here to identify the characters they depict.
+      No claim of ownership is made.
       <a href="https://gitlab.com/sstangle73/greys-network" target="_blank" rel="noopener noreferrer">Source &amp; data</a>.
       <button type="button" id="report-open" class="linkish">Report a problem</button>
     </div>

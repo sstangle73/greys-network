@@ -144,6 +144,12 @@ season), not wiki prose; the harvester's local cache of article text is
 gitignored and never published. A handful of Season 21 dates the wiki had not
 yet covered were filled in from published episode recaps.
 
+Character images on the chart are screencaps from *Grey's Anatomy*,
+*Station 19* and *Private Practice*, © ABC Studios / Shondaland. They are shown
+to identify the characters they depict, and no claim of ownership is made. They
+are fetched at deploy time rather than committed, so removing them is a one-line
+change rather than a history rewrite.
+
 Character names and the underlying works are the property of their respective
 rights holders. This is a non-commercial fan project with no affiliation to ABC,
 Shondaland, or Disney.

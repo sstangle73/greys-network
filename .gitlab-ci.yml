@@ -66,6 +66,10 @@ pages:
   # the deployed artifact and never enter git history -- taking them down later
   # is a one-line change to this file, not a history rewrite.
   #
+  # They are served publicly. That is a deliberate choice, not an oversight:
+  # the About dialog names ABC Studios / Shondaland and disclaims ownership.
+  # Deleting the `cp -r portraits` line below is the whole takedown.
+  #
   # The cache is not an optimisation, it is basic courtesy: without it every
   # push would re-request 66 images from a free, volunteer-run wiki. On a
   # persistent runner it is a local directory, so this costs nothing.

@@ -1,8 +1,14 @@
 wikicache/
 candidate_edges.csv
 # Character portraits are screencaps belonging to ABC/Shondaland, not facts.
-# Caching them locally is fine; committing them to a public repo is
-# redistribution. Remove this line deliberately if you decide to publish them.
+# They stay out of GIT specifically -- history is forever and a takedown would
+# mean a rewrite, whereas the deployed copy is one line in .gitlab-ci.yml.
+#
+# They ARE published on the Pages site, deliberately, with an attribution line
+# in the About dialog naming the rights holders and disclaiming ownership. If
+# you would rather not serve them at all, delete the portraits copy from the
+# pages job; the chart falls back to name-only cards, which is how it worked
+# before portraits existed.
 portraits/
 # Build artifact. CI regenerates it for the live site, and a local build embeds
 # portrait paths that only exist on the machine that cached them -- committing
