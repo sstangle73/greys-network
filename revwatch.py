@@ -34,6 +34,17 @@ WHAT COUNTS AS A CHANGE WORTH REPORTING
     report also says whether the page went from having no usable summary to
     having one, because that is the change that turns an undatable tie into a
     datable one.
+
+    Beyond that the report is GRADED, because a flat list of edited pages is
+    mostly noise. The scheduled run of 2026-08-23 named fifteen changed pages:
+    five were vandalism that had already been reverted, so the text was
+    byte-identical to the baseline, and not one of the fifteen moved a value in
+    edges.csv. Fifteen pages to open, nothing to decide.
+
+    So each edit is compared against the regions the parsers actually read --
+    see classify_edit() -- and only a page where the parsed VALUES moved fails
+    the job. The judgement call stays a human one; what changes is that the
+    queue holds the edits that need judging instead of every edit.
 """
 
 import argparse
@@ -46,10 +57,22 @@ import time
 import urllib.parse
 import urllib.request
 
-from wiki_harvest import UA, WIKI, CACHE as CHAR_CACHE, seeds, fetch_wikitext
+from wiki_harvest import (UA, WIKI, CACHE as CHAR_CACHE, seeds, fetch_wikitext,
+                          infobox_partners, romantic_sections, canonical,
+                          infer_season, classify, EPISODE_REF)
 import episode_harvest as ep
+# Imported rather than reimplemented: if the citation checker's idea of "this
+# page names this person" changes, this must change with it.
+from verify_citations import mentions
 
 STATE = "revision_baseline.json"
+# Pages whose CURRENT revision has already been classified as harmless, so a
+# run that changes nothing does not re-fetch and re-classify them forever.
+# This lives in the cache directory and not the repo because it is an
+# optimisation, not a record: losing it costs requests, never correctness.
+# The drift job's cache is best-effort -- it was empty on the run that prompted
+# all this -- so nothing here may depend on it surviving.
+CLEARED = os.path.join(CHAR_CACHE, "revwatch_cleared.json")
 # The API's own limit for an anonymous query. Asking for more silently drops
 # the overflow, which would look like those pages had never changed.
 BATCH = 50
@@ -109,13 +132,187 @@ def watched():
 
 
 def refresh(title, kind, path):
-    """Re-download one page. Returns (before, after) summary lengths."""
-    before = summary_len(open(path, encoding="utf-8").read()) if os.path.exists(path) else 0
+    """Re-download one page into the cache. Returns the new wikitext."""
     text = ep.fetch(title) if kind == "episode" else fetch_wikitext(title)
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     with open(path, "w", encoding="utf-8") as fh:
         fh.write(text)
-    return before, summary_len(text)
+    return text
+
+
+# --------------------------------------------------------------------------- #
+# Grading an edit against what the dataset reads
+# --------------------------------------------------------------------------- #
+#
+# The regions below are not restated from the parsers, they are IMPORTED from
+# them. infobox_partners, romantic_sections, infer_season and classify are the
+# same functions parse() calls, and SUMMARY is what the harvest reads off an
+# episode page. Teaching the parser to read something new therefore teaches
+# this at the same time, instead of leaving a classifier that quietly clears
+# edits to a field that now matters.
+#
+#   CLEAR     the edit missed every region the parsers read -- trivia, images,
+#             appearance tables, an infobox field nothing looks at. It cannot
+#             reach edges.csv, so it is accepted without anyone reading it.
+#   COPYEDIT  the edit landed inside a read region, but running the parsers
+#             over both revisions produces identical values. Reported with the
+#             wording change so it is visible, but it does not block.
+#   REVIEW    the parsers disagree across the two revisions. The only tier that
+#             fails the job.
+#
+# Anything unclassifiable is REVIEW: a page with no baseline revision, a fetch
+# that failed, a revision that came back empty. Guessing CLEAR on a page that
+# could not be read is the single mistake that would lose data silently, so it
+# is the one case the code refuses to guess at.
+
+
+def _content_at(revid):
+    """The wikitext of one specific revision.
+
+    From the API rather than the local cache on purpose. The "before" copy is
+    exactly what a cold cache does not have -- the run this was written for
+    logged `WARNING: Cache file does not exist` and re-downloaded all 155
+    character pages -- whereas the baseline revision id is committed and always
+    available. One extra request per changed page, and only per CHANGED page.
+    """
+    url = (f"{WIKI}/api.php?action=query&prop=revisions&revids={revid}"
+           f"&rvprop=content&rvslots=main&format=json")
+    req = urllib.request.Request(url, headers={"User-Agent": UA})
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        data = json.load(resp)
+    for _, page in data.get("query", {}).get("pages", {}).items():
+        rev = (page.get("revisions") or [{}])[0]
+        return rev.get("slots", {}).get("main", {}).get("*", "")
+    return ""
+
+
+def _norm(text):
+    """Whitespace inside a read region cannot change what a parser extracts."""
+    return re.sub(r"\s+", " ", text or "").strip()
+
+
+def _char_regions(text):
+    """The two things parse() reads off a character page."""
+    box = {canonical(n): (t, q) for n, t, q in infobox_partners(text)}
+    sec = {canonical(p): b for p, b in romantic_sections(text)}
+    return box, sec
+
+
+def _char_parsed(box, sec):
+    """Per partner, the fields parse() would write to candidate_edges.csv.
+
+    The episode codes are compared as a SET as well as through the season span
+    infer_season() reduces them to. The span is lossy in the exact case this
+    module says it cares most about: a body already citing 6x08 and 6x12 gains
+    6x11, parse() writes the identical row, and a newly added citation would
+    pass unmentioned. Comparing the codes costs a few more escalations and
+    keeps "a citation being added" visible.
+    """
+    out = {}
+    for partner, body in sec.items():
+        qual = box.get(partner, ("", ""))[1]
+        first, last = infer_season(body)
+        out[partner] = (classify(qual, body), qual, first, last,
+                        sorted(set(EPISODE_REF.findall(body))))
+    for partner, (guess, qual) in box.items():
+        out.setdefault(partner, (guess, qual, None, None, []))
+    return out
+
+
+def _ep_regions(text):
+    m = SUMMARY.search(text)
+    num = ep.EPISODE_NUM.search(text)
+    return (m.group(1) if m else "").strip(), (num.group(1) if num else None)
+
+
+def _people():
+    """Dataset names, for the one episode-page check that needs them."""
+    path = "nodes.csv"
+    if not os.path.exists(path):
+        return None
+    with open(path, encoding="utf-8") as fh:
+        return [row["Character"] for row in csv.DictReader(fh)]
+
+
+def _ep_parsed(summary, num, people):
+    """Everything downstream reads out of an episode page.
+
+    The named-people set is here because verify_citations asks whether a cited
+    episode names both partners, and it matches on first names -- so a typo fix
+    from "And" to "Andy" genuinely changes the answer. Without nodes.csv that
+    check is skipped rather than faked, and the caller says so.
+    """
+    named = sorted(p for p in people if mentions(summary, p)) if people else None
+    return (num,
+            summary_len(summary) >= STUB_CHARS,
+            sorted(set(EPISODE_REF.findall(summary))),
+            sorted({m.lower() for m in ep.STARTS.findall(summary)}),
+            named)
+
+
+def classify_edit(kind, old_text, new_text, people=None):
+    """Grade one page's before/after wikitext. Returns (tier, notes)."""
+    if not old_text or not new_text:
+        return "REVIEW", ["one of the two revisions came back empty -- "
+                          "not classified rather than guessed at"]
+    if old_text == new_text:
+        return "CLEAR", ["net no-op: ends byte-identical to the baseline "
+                         "(edited and reverted)"]
+
+    if kind == "character":
+        o_box, o_sec = _char_regions(old_text)
+        n_box, n_sec = _char_regions(new_text)
+        if (o_box == n_box and set(o_sec) == set(n_sec)
+                and all(_norm(o_sec[k]) == _norm(n_sec[k])
+                        for k in set(o_sec) & set(n_sec))):
+            return "CLEAR", []
+        o_par, n_par = _char_parsed(o_box, o_sec), _char_parsed(n_box, n_sec)
+        if o_par == n_par:
+            return "COPYEDIT", ["wording moved under ==Romantic== or in a "
+                                "partner infobox field; parsed values did not"]
+        notes = []
+        for k in sorted(set(o_par) | set(n_par)):
+            if o_par.get(k) != n_par.get(k):
+                notes.append(f"{k}: {o_par.get(k)} -> {n_par.get(k)}")
+        return "REVIEW", notes
+
+    o_sum, o_num = _ep_regions(old_text)
+    n_sum, n_num = _ep_regions(new_text)
+    if o_num == n_num and _norm(o_sum) == _norm(n_sum):
+        return "CLEAR", []
+    o_par = _ep_parsed(o_sum, o_num, people)
+    n_par = _ep_parsed(n_sum, n_num, people)
+    if o_par == n_par:
+        note = "wording moved in ==Full Summary==; parsed values did not"
+        if people is None:
+            note += " (no nodes.csv, so who the summary NAMES was not compared)"
+        return "COPYEDIT", [note]
+    labels = ["episode number", "has a usable summary", "episode codes cited",
+              "relationship-start wording", "people named"]
+    notes = [f"{lab}: {o!r} -> {n!r}"
+             for lab, o, n in zip(labels, o_par, n_par) if o != n]
+    return "REVIEW", notes
+
+
+def _load_cleared():
+    if not os.path.exists(CLEARED):
+        return {}
+    try:
+        with open(CLEARED, encoding="utf-8") as fh:
+            return json.load(fh)
+    except (OSError, ValueError):
+        # A corrupt optimisation file must not stop the check.
+        return {}
+
+
+def _save_cleared(state):
+    try:
+        os.makedirs(os.path.dirname(CLEARED) or ".", exist_ok=True)
+        with open(CLEARED, "w", encoding="utf-8", newline="\n") as fh:
+            json.dump(state, fh, indent=1, sort_keys=True)
+            fh.write("\n")
+    except OSError:
+        pass
 
 
 def check(accept=False):
@@ -155,28 +352,64 @@ def check(accept=False):
               f"would be worse than reporting nothing.", file=sys.stderr)
         return 2
 
+    # A page already graded harmless AT THIS EXACT REVISION is not fetched
+    # again. Grading the next edit against that revision rather than against
+    # the baseline is safe because the tiers are transitive: if the parsers
+    # agreed across baseline -> A, and they agree across A -> B, then they
+    # agree across baseline -> B.
+    cleared = _load_cleared()
+    settled = [t for t in changed if cleared.get(t) == now[t]]
+    changed = [t for t in changed if cleared.get(t) != now[t]]
+    people = _people()
+
     # Re-download only what moved, so the next parse reads the new text. This is
     # the entire point: the corpus stays current without re-fetching all of it.
     filled, failed = [], []
+    tiers = {"CLEAR": [], "COPYEDIT": [], "REVIEW": []}
+
     for title in changed + added:
         kind, path = pages[title]
-        had_copy = os.path.exists(path)
+        # Grade against the last revision we cleared if there is one, and the
+        # committed baseline otherwise. A page in `added` has neither.
+        base_rev = cleared.get(title) or prior.get(title)
         try:
-            before, after = refresh(title, kind, path)
+            old_text = _content_at(base_rev) if base_rev else ""
+            new_text = refresh(title, kind, path)
         except Exception as exc:
             failed.append(f"{title} ({exc})")
+            tiers["REVIEW"].append((title, kind, [f"re-download failed: {exc}"]))
             continue
-        # Only a page we HAD, and which had no summary, can be said to have
-        # gained one. Without the had_copy test every episode page downloaded
-        # for the first time reports as newly written.
-        if kind == "episode" and had_copy and before < STUB_CHARS <= after:
-            filled.append((title, before, after))
+
+        if not base_rev:
+            tiers["REVIEW"].append(
+                (title, kind, ["newly watched: no baseline revision to grade "
+                               "it against"]))
+        else:
+            tier, notes = classify_edit(kind, old_text, new_text, people)
+            tiers[tier].append((title, kind, notes))
+            if tier != "REVIEW":
+                cleared[title] = now[title]
+
+        # An episode page that has gained a real summary may date a tie that
+        # could not be dated before. The "before" length now comes from the
+        # baseline REVISION rather than from a local file, so this finally
+        # fires in CI too: the cache is usually cold there, which made the old
+        # had_copy test false for every page every run.
+        if kind == "episode" and base_rev:
+            before, after = summary_len(old_text), summary_len(new_text)
+            if before < STUB_CHARS <= after:
+                filled.append((title, before, after))
         time.sleep(PAUSE)
 
-    print(f"\n  changed : {len(changed)}")
+    _save_cleared(cleared)
+
+    print(f"\n  changed : {len(changed) + len(settled)}")
     print(f"  new     : {len(added)}")
     print(f"  gone    : {len(gone)}")
     print(f"  no page : {len(missing)}")
+    if settled:
+        print(f"  ({len(settled)} of those were graded harmless on an earlier "
+              f"run and were not fetched again)")
     if unchecked:
         # Said out loud rather than silently narrowed: a watch list that has
         # quietly shrunk looks exactly like a wiki that has stopped changing.
@@ -187,13 +420,21 @@ def check(accept=False):
     if failed:
         print(f"  re-download FAILED for {len(failed)}: {', '.join(failed[:5])}")
 
-    for title in sorted(changed):
-        kind = pages[title][0]
-        print(f"    CHANGED  [{kind}] {title}")
-    for title in sorted(added):
-        print(f"    NEW      {title}")
+    print(f"\n  cleared automatically : {len(tiers['CLEAR'])}")
+    print(f"  copyedits             : {len(tiers['COPYEDIT'])}")
+    print(f"  NEEDS REVIEW          : {len(tiers['REVIEW'])}")
+
+    # Loudest first: the queue is the point, the rest is the audit trail for
+    # what was accepted on your behalf.
+    for tier, label in (("REVIEW", "REVIEW  "),
+                        ("COPYEDIT", "copyedit"),
+                        ("CLEAR", "cleared ")):
+        for title, kind, notes in sorted(tiers[tier]):
+            print(f"    {label}  [{kind}] {title}")
+            for note in notes:
+                print(f"                {note}")
     for title in sorted(gone):
-        print(f"    GONE     {title}  (renamed? check ALIASES)")
+        print(f"    GONE      {title}  (renamed? check ALIASES)")
 
     if filled:
         print(f"\n{len(filled)} episode page(s) went from having NO usable summary "
@@ -205,14 +446,24 @@ def check(accept=False):
         with open(STATE, "w", encoding="utf-8", newline="\n") as fh:
             json.dump(now, fh, indent=1, sort_keys=True)
             fh.write("\n")
+        # The baseline now records every current revision, so the cleared-set
+        # has nothing left to remember.
+        if os.path.exists(CLEARED):
+            os.remove(CLEARED)
         print(f"\n{STATE}: {len(now)} revision(s) recorded. Commit it -- that "
               f"commit is the record that these were reviewed.")
         return 0
 
-    if changed or added or gone:
+    if tiers["REVIEW"] or gone:
         print("\nReview the pages above, then run `python revwatch.py accept` and "
               "commit revision_baseline.json. Nothing in CI can clear this.")
         return 1
+    if tiers["CLEAR"] or tiers["COPYEDIT"] or settled:
+        print("\nPages were edited, but nothing the dataset reads moved. Run "
+              "`python revwatch.py accept` when convenient to fold these into "
+              "the baseline; until then they are remembered in the cache and "
+              "not re-fetched.")
+        return 0
     print("\nNothing has been edited since the last check.")
     return 0
 
