@@ -59,7 +59,7 @@ import urllib.request
 
 from wiki_harvest import (UA, WIKI, CACHE as CHAR_CACHE, seeds, fetch_wikitext,
                           infobox_partners, romantic_sections, canonical,
-                          infer_season, classify, EPISODE_REF)
+                          infer_season, classify, EPISODE_REF, cache_file)
 import episode_harvest as ep
 # Imported rather than reimplemented: if the citation checker's idea of "this
 # page names this person" changes, this must change with it.
@@ -119,8 +119,7 @@ def watched():
     """Every page the dataset reads, as {title: (kind, cache_path)}."""
     pages = {}
     for title in seeds():
-        pages[title] = ("character",
-                        os.path.join(CHAR_CACHE, title.replace("/", "_") + ".wiki"))
+        pages[title] = ("character", cache_file(title))
     if os.path.exists(ep.INDEX):
         with open(ep.INDEX, encoding="utf-8") as fh:
             for row in csv.DictReader(fh):

@@ -199,7 +199,7 @@ def harvest(titles=None, max_age_days=None):
     fetched, reused, missing, failed = 0, 0, [], []
     cutoff = None if max_age_days is None else time.time() - max_age_days * 86400
     for title in (titles if titles is not None else seeds()):
-        path = os.path.join(CACHE, title.replace("/", "_") + ".wiki")
+        path = cache_file(title)
         if os.path.exists(path) and (cutoff is None or os.path.getmtime(path) > cutoff):
             print(f"  cached  {title}")
             reused += 1
@@ -254,6 +254,14 @@ ALIASES = {
     # came back as a brand-new person who happened to be dating everyone
     # Victoria Hughes dates.
     'Victoria "Vic" Hughes': "Victoria Hughes",
+    # Same cause as Vic, but it went wrong in three places at once instead of
+    # one. The dataset spells him without the quotes, so: the harvest asked for
+    # a title that does not exist and reported NO PAGE every run; the tie went
+    # unseen by the parser even though it is in edges.csv, dated 3x09 and
+    # cited; and Violet Turner's page parsed the quoted form into a candidate
+    # that matched nothing, so the drift report has been listing a tie the
+    # dataset already has as one the wiki has and it does not.
+    '"The Captain" Montgomery': "The Captain Montgomery",
     "Allison Robin Brown": "Allison Brown",
     # Two different men called Allan. This one is Adele's fellow resident at
     # Roseridge; plain "Allan" is Violet Turner's ex, who is married to Cami
@@ -282,6 +290,32 @@ def canonical(name: str) -> str:
         target, display = target.strip(), display.strip()
         name = target if target in ALIASES else (display or target)
     return ALIASES.get(name, name)
+
+
+# Characters Windows refuses in a filename. The cache is keyed by article title
+# and parse() reads the title straight back off the filename, so whatever this
+# substitutes has to be REVERSIBLE -- which rules out the usual replacement
+# with an underscore. Percent-encoding is, and it leaves every title currently
+# in the cache untouched, so nothing is re-fetched to adopt it.
+#
+# This surfaced through '"The Captain" Montgomery', whose article title really
+# does contain quotes. On the Linux runner it cached fine; on Windows it threw
+# Errno 22 and accept refused to write a baseline -- and accept is a LOCAL
+# command by design, since nothing in CI may write one.
+_ILLEGAL = '<>:"/\\|?*%'
+
+
+def cache_file(title: str) -> str:
+    """Path of one cached article. Reverse with title_from_cache()."""
+    safe = "".join(f"%{ord(c):02X}" if c in _ILLEGAL else c for c in title)
+    return os.path.join(CACHE, safe + ".wiki")
+
+
+def title_from_cache(fname: str) -> str:
+    """The article title a cache filename was built from."""
+    stem = fname[:-5] if fname.endswith(".wiki") else fname
+    return re.sub(r"%([0-9A-F]{2})",
+                  lambda m: chr(int(m.group(1), 16)), stem)
 
 
 def infobox_partners(text: str):
@@ -390,7 +424,7 @@ def parse() -> None:
     for fname in sorted(os.listdir(CACHE)):
         if not fname.endswith(".wiki"):
             continue
-        subject = fname[:-5]
+        subject = title_from_cache(fname)
         text = open(os.path.join(CACHE, fname), encoding="utf-8").read()
 
         quals = {}
@@ -537,7 +571,11 @@ EXCLUDED = {
 
 # Not people. The parser picks these out of infobox rows that describe a partner
 # rather than naming one, and they can never resolve to a character page.
-PLACEHOLDERS = {"Others", "Exes", "Unnamed", "Unknown", "Wrecking Ball"}
+# "Other Women" arrived the moment '"The Captain" Montgomery' started being
+# fetched at all -- it is the infobox declining to name anyone, same as
+# "Others", which was already here.
+PLACEHOLDERS = {"Others", "Other Women", "Exes", "Unnamed", "Unknown",
+                "Wrecking Ball"}
 
 # A generic role where a name should be. The wiki uses these in infobox rows
 # for partners it will not name, and they arrive looking exactly like people.
