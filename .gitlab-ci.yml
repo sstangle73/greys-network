@@ -58,6 +58,19 @@ test:
     - node tests/overlap.mjs
     - node tests/table.mjs
 
+# The only job that runs on every push and needs neither the built datasets
+# nor a package install: the grader is pure stdlib, and its fixtures are wiki
+# MARKUP around invented names rather than cached article text. So this is
+# seconds, and it guards the one decision in this pipeline that is made without
+# a human -- revwatch clearing an edit as harmless. Clearing one that was not is
+# the failure nothing downstream would ever report.
+grader:
+  stage: test
+  image: python:3.12-slim
+  needs: []
+  script:
+    - python tests/test_revwatch.py
+
 pages:
   stage: deploy
   image: python:3.12-slim
