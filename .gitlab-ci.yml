@@ -147,5 +147,10 @@ drift:
     expire_in: 30 days
     paths:
       - drift_report.md
+      # The failure email links here. drift_report.md answers "did the
+      # wiki gain a tie"; this one answers "which edited pages does
+      # somebody have to read", which is the other half of why this job
+      # fails and was previously only in the job log.
+      - revwatch_report.md
   rules:
     - if: $CI_PIPELINE_SOURCE == "schedule"

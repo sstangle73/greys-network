@@ -20,6 +20,7 @@ __pycache__/
 # Build artifacts
 table.html
 drift_report.md
+revwatch_report.md
 
 # Episode-page cache: same reasoning as wikicache -- CC-BY-SA prose we read
 # facts out of, never republish.

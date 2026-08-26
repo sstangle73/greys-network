@@ -294,6 +294,67 @@ def classify_edit(kind, old_text, new_text, people=None):
     return "REVIEW", notes
 
 
+REPORT = "revwatch_report.md"
+
+
+def _write_report(tiers, settled, gone, filled):
+    """The graded result as a file, not only as job output.
+
+    A failed pipeline is already an email, and that email links to artifacts.
+    Until now the only artifact was drift_report.md, which covers ties and says
+    nothing about edited pages -- so a run that failed BECAUSE a page needed
+    reading pointed at a file whose first line was "Nothing changed on the wiki
+    since the last run." The queue belongs somewhere readable without opening
+    the job log.
+    """
+    review, copyedit, clear = tiers["REVIEW"], tiers["COPYEDIT"], tiers["CLEAR"]
+    out = ["# Wiki revision report", ""]
+
+    if review or gone:
+        out += ["## Needs review", "",
+                "Nothing in CI can clear these. Read the pages, then run "
+                "`python revwatch.py accept` and commit revision_baseline.json.",
+                ""]
+        for title, kind, notes in sorted(review):
+            out.append(f"- **{title}** _({kind})_")
+            for note in notes:
+                out.append(f"  - {note}")
+        for title in sorted(gone):
+            out.append(f"- **{title}** -- no longer found. Renamed? "
+                       f"Check `ALIASES`.")
+        out.append("")
+    else:
+        out += ["No page needs reading. Every edit either missed the regions "
+                "the parsers read, or left what they extract unchanged.", ""]
+
+    if filled:
+        out += [f"## {len(filled)} episode page(s) gained a usable summary", "",
+                "These may date a tie that could not be dated before.", ""]
+        out += [f"- **{t}** -- {b} to {a} chars" for t, b, a in filled] + [""]
+
+    out += ["## Graded automatically", "",
+            f"- **{len(clear)}** cleared -- the edit missed every region the "
+            f"parsers read",
+            f"- **{len(copyedit)}** copyedit(s) -- landed in a read region, but "
+            f"the parsed values are identical",
+            f"- **{len(settled)}** already graded on an earlier run, not "
+            f"re-fetched",
+            ""]
+    if copyedit:
+        out += ["### Copyedits", ""]
+        for title, kind, notes in sorted(copyedit):
+            out.append(f"- **{title}** _({kind})_: {'; '.join(notes)}")
+        out.append("")
+    if clear:
+        out += ["### Cleared", ""]
+        for title, kind, notes in sorted(clear):
+            out.append(f"- {title} _({kind})_" + (f" -- {notes[0]}" if notes else ""))
+        out.append("")
+
+    with open(REPORT, "w", encoding="utf-8", newline="\n") as fh:
+        fh.write("\n".join(out) + "\n")
+
+
 def _load_cleared():
     if not os.path.exists(CLEARED):
         return {}
@@ -402,6 +463,7 @@ def check(accept=False):
         time.sleep(PAUSE)
 
     _save_cleared(cleared)
+    _write_report(tiers, settled, gone, filled)
 
     print(f"\n  changed : {len(changed) + len(settled)}")
     print(f"  new     : {len(added)}")
