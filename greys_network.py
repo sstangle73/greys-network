@@ -179,6 +179,8 @@ GOT_TOGETHER = {
     frozenset({"Meredith Grey", "Derek Shepherd"}): (1, 2),
     frozenset({"Owen Hunt", "Amelia Shepherd"}): (12, 1),
     frozenset({"Owen Hunt", "Teddy Altman"}): (15, 1),
+    # Reunion hookup at 21x13; dinner and an actual relationship from 22x04.
+    frozenset({"Owen Hunt", "Nora Young"}): (22, 4),
     # Sex in her car in S12 ("At Last", 12x23); only a couple from 13x20 on.
     frozenset({"Meredith Grey", "Nathan Riggs"}): (13, 1),
     # One hookup as a new intern, then an actual relationship in S6.
@@ -354,7 +356,10 @@ def _romantic_edges() -> List[Tuple]:
         ("Owen Hunt", "Emma Marling", "Dating", (10, 4), (10, 14)),
         ("Owen Hunt", "Teddy Altman", "Married", (14, 17), None),
         ("Owen Hunt", "Carina DeLuca", "Fling", (14, 6), (14, 12)),
-        ("Owen Hunt", "Nora", "Fling", (21, 13), (21, 13)),
+        # "Nora Young" on the wiki: plain "Nora" never matched her article, and
+        # the wiki has an unrelated Nora (married to Zachary). Slept together at
+        # the 21x13 reunion; dated after his split from Teddy, 22x04-22x06.
+        ("Owen Hunt", "Nora Young", "Dating", (21, 13), (22, 6)),
         ("Teddy Altman", "Henry Burton", "Married", (7, 10), (8, 9)),
         ("Teddy Altman", "Andrew Perkins", "Dating", (7, 1), (7, 22)),
         ("Teddy Altman", "Tom Koracick", "Dating", (15, 12), (17, 7)),
