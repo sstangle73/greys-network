@@ -28,7 +28,7 @@ a spoiler for them.
 |---|---|
 | `greys_network.py` | Source of truth. All relationship data lives here as Python literals. Emits `edges.csv` + `nodes.csv` + `shows.csv`. |
 | `build_visualization.py` | Reads the CSVs, emits the standalone `greys_network.html`. |
-| `wiki_harvest.py` | Harvests the Grey's Anatomy Universe Wiki and diffs it against `edges.csv`. **Needs network — this is why the project moved to Claude Code.** |
+| `wiki_harvest.py` | Harvests the Grey's Anatomy Universe Wiki and diffs it against `edges.csv`. **Needs network.** |
 | `review.py` | Reviewer's companion: dumps the `==Romantic==` prose for a character so a tie can be checked by hand. Not part of the build. |
 | `episode_harvest.py` | Caches one wiki page per episode (681 across three shows) and scans summaries for when a pair actually got together. |
 | `backfill_episodes.py` | Candidate generator for episode dates. **Report-only — its docstring explains why its output cannot be trusted unverified.** |
@@ -39,14 +39,23 @@ a spoiler for them.
 | `tests/runtime.mjs` | Drives every UI control in jsdom, catches runtime errors. |
 | `tests/crossshow.mjs` | Asserts each show's slider governs only its own dates. |
 | `tests/table.mjs` | Table filters — and, more importantly, that the table is still complete and inert with scripting off. |
+| `tests/mobile.mjs` | Filter interaction with the rail expanded to fill a phone screen. |
+| `tests/overlap.mjs` | Fails if visible node boxes overlap past a threshold; the frozen layout is what the reader gets. |
+| `build_table.py` | Reads the CSVs, emits `table.html`, the no-JS table view. |
+| `verify_citations.py` | Checks every `cited` row in `citations.csv` against the episode page it names. Report-only in the scheduled job. |
+| `revwatch.py` | Asks the wiki API which watched pages changed, re-downloads only those, and grades each edit: only a change to a value the parsers read fails the job. |
+| `tests/test_revwatch.py` | Guards that grader, the one decision CI makes without a human (clearing an edit as harmless). CI's `grader` job runs it in every pipeline. |
+| `fetch_portraits.py` | Caches one headshot per character in the gitignored `portraits/`; the `pages` job runs it. |
+| `relay/` | Optional Cloudflare Worker that files the chart's report form as a GitLab issue, so the token stays out of the static page. |
 
 ## Build
 
 ```bash
 python greys_network.py --outdir .          # data -> edges.csv, nodes.csv, shows.csv
 python build_visualization.py --indir .     # CSVs -> greys_network.html
+python build_table.py --indir .             # CSVs -> table.html
 npm install                                 # jsdom + d3, for the tests
-npm test                                    # all three suites
+npm test                                    # every jsdom suite in tests/
 ```
 
 Run the tests after **any** change to `build_visualization.py`. They exist
@@ -56,7 +65,7 @@ stacked at the origin because nothing painted the first frame, and a readout
 that counted links the filters had already removed.
 
 `build_visualization.py` writes with `newline="\n"` on purpose. Python's text
-mode would emit CRLF on Windows, and both older suites match on
+mode would emit CRLF on Windows, and every chart suite in `tests/` matches on
 `<script>\n(const DATA` — without it the tests cannot pass on a clean Windows
 checkout.
 
@@ -75,10 +84,10 @@ Last_Season/Episode     when it ended (blank = still together)
 Reveals                 what OTHER shows showed, e.g. "GA:16x14:Dating"
 ```
 
-**Episode precision is per-tie, and `Episode_Known` says which.** All 158
-romantic ties now carry a real start episode, and all but 2 carry a real end.
-Anything still flagged `Episode_Known=0` is held back until its whole season has
-been watched, which is the late end.
+**Episode precision is per-tie, and `Episode_Known` / `End_Episode_Known` say
+which.** Every romantic tie carries a real start episode, and all but the few
+listed under *Current task* carry a real end. A date flagged unknown is held
+back until its whole season has been watched, which is the late end.
 
 **Anchor a tie to the episode the viewer is shown or told about it — never to an
 inferred origin.** This is the rule that closed the last of the unknowns, and it
@@ -109,8 +118,7 @@ That flag exists because `First_Episode: 1` used to mean two different things �
 "the pilot" and "we have no idea" — and episode 1 is the *earliest* point in a
 season, so every unknown was being asserted at the most spoiler-risky moment
 available. The fallback was invisible on a static chart and obvious the moment
-timeline playback landed. Worth remembering that a display feature can be the
-thing that audits your data.
+timeline playback landed.
 
 **Do not mine episode numbers.** Taking the earliest code in a section looks
 safe and is not: for Owen & Teddy in season 14 it picks 14x02, where the prose
@@ -200,7 +208,7 @@ here, since nobody says "we are now dating" on camera.
 
 ## Current task
 
-The audit is complete: **all 158 romantic ties across the three shows are
+The audit is complete: **every romantic tie across the three shows is
 source-checked**, `audit_tracker.csv` has no unverified rows left, and every tie
 carries a real start episode.
 
@@ -220,16 +228,17 @@ Where the remaining risk actually sits, for whoever picks this up:
   relationship is narrated in the past tense the only time it is ever mentioned.
   There is no cutoff at which a viewer would think these couples are together,
   so they only ever draw under "show past ties". Don't "fix" them.
-- **Evidence coverage: 131 cited, 15 inferred, 4 convention, 3 uncited, and 5
+- **Evidence coverage: 135 cited, 15 inferred, 4 convention, 3 uncited, and 5
   with no `citations.csv` row at all.** Those last 5 are all Season 22 ties the
   wiki has not documented yet — they are audited but the reasoning was never
   written down, and they show as "Unrecorded" rather than pretending. That is
   the honest state; fill them in when the wiki catches up.
-- **The two ties still lacking an end episode** are Thatcher & Danielle (she
+- **The three ties still lacking an end episode** are Izzie & Hank (he is on
+  screen only in 1x05, and nothing ends it there), Thatcher & Danielle (she
   appears once, and nothing ever ends it) and Naomi & William White (his death
-  is never dated anywhere in the cache). Both hold to their season's close,
-  which is the safe reading. Ending them would assert a breakup that no episode
-  shows.
+  is never dated anywhere in the cache). All three hold to their season's
+  close, which is the safe reading. Ending them would assert a breakup that no
+  episode shows.
 - **Deliberately excluded**, all for the same reason — a partner who never
   appears in a present-day storyline: Koracick's Dana Hamilton, Teddy's Allison
   Brown, Travis's Michael Williams, Sullivan's Claire, Pete's Anna Wilder.
@@ -243,7 +252,7 @@ Where the remaining risk actually sits, for whoever picks this up:
 To re-run the harvest:
 
 ```bash
-python wiki_harvest.py harvest   # ~40 pages -> ./wikicache (1s pause each)
+python wiki_harvest.py harvest   # hub pages + everyone in a romantic tie -> ./wikicache (1s pause each)
 python wiki_harvest.py parse     # -> candidate_edges.csv
 python wiki_harvest.py diff      # three buckets against edges.csv
 ```
@@ -267,13 +276,15 @@ Failure modes it has actually produced, all confirmed against prose:
 - **A `==Romantic==` section is not proof of a tie.** The wiki files unrequited
   crushes there too. Apply Dana's scope rule: sex, or more than one date.
 
-Put your email in `UA` in `wiki_harvest.py` before running. If `action=raw` is
-blocked, switch to `/api.php?action=query&prop=revisions&rvslots=*&rvprop=content&format=json`.
+Set `GREYS_CONTACT` to your email before harvesting: `wiki_harvest.py` puts it in
+the User-Agent, and its fallback is the project page, which keeps a personal
+address out of the public repo. When `action=raw` answers 403 or 429,
+`fetch_wikitext()` falls back to the `api.php` revisions query by itself.
 
 ## Known-uncertain, deliberately left out
 
-Named on Dana's chart, no wiki confirmation found: Cathy Nelson, Hockey Hank,
-Dana Seabury, Laurel Pinson, Nurse Colleen, Noelle, Vikram Roy.
+Named on Dana's chart, no wiki confirmation found: Cathy Nelson, Dana Seabury,
+Nurse Colleen, Noelle.
 
 Estimated rather than sourced (both past the owner's cutoff): the end dates for
 Kwan & Mohanty and Amelia & Toni.
@@ -287,8 +298,10 @@ present-day storyline, which is the same rule Dana used to exclude her.
   an 8px drag threshold so a tap doesn't nudge nodes, and multi-touch passes
   through to zoom.
 - Two node tiers: degree ≥ 3 gets a card, everyone else is a bare name.
-  `Image_URL` in `nodes.csv` is empty by design — fill it in and cards become
-  circular portraits automatically on the next build.
+  Card portraits come from `fetch_portraits.py`, which caches headshots in the
+  gitignored `portraits/` (the `pages` job runs it); `build_visualization.py`
+  reads `portraits/manifest.csv`, and an `Image_URL` filled in `nodes.csv` takes
+  precedence. With neither, a card shows the name alone.
 - Markers ride the middle of each edge: ♥ married, broken ♥ divorced, ••• relationship,
   1 one-time. Blood relations are dotted lines with no marker.
 - **Colour is never the only cue.** Every type carries a dash pattern and a
@@ -303,8 +316,8 @@ present-day storyline, which is the same rule Dana used to exclude her.
   meant spreading the graph out perversely *hid* labels.
 - **The name autocomplete is hand-rolled, and has to stay that way.** It was a
   `<datalist>`, which is one attribute and behaves perfectly on a desktop. On
-  Android Chrome the same markup renders as a *full-screen* list of all 187
-  names, covering the chart, the rail and the text being typed — and nothing
+  Android Chrome the same markup renders as a *full-screen* list of every
+  name, covering the chart, the rail and the text being typed — and nothing
   about a native datalist can be capped, styled or positioned. The replacement
   caps at 8 rows, flips above the field when there is no room below (the rail
   sits low on a phone, and the keyboard takes what is left), measures against
@@ -317,8 +330,8 @@ present-day storyline, which is the same rule Dana used to exclude her.
   for existing is the no-JS reading; don't regress it.
 - **The two pages round-trip.** Every name in the table links to
   `greys_network.html#sel=<name>`, which selects that person *and centres on
-  them* — fitting the whole graph instead would land you on a speck among 187
-  nodes. The detail panel links back to `table.html#q=<name>`, which the filter
+  them* — fitting the whole graph instead would land you on a speck among
+  nearly two hundred nodes. The detail panel links back to `table.html#q=<name>`, which the filter
   reads. The chart answers "who is this connected to"; the table answers "and
   how do we know".
 
@@ -328,9 +341,8 @@ It used to fail whenever the wiki had a tie `edges.csv` did not — which meant 
 candidate you had already looked at and rejected failed *every* scheduled run
 forever. An alert that always fires is one nobody reads.
 
-It now keeps a snapshot (`wikicache/drift_state.json`, so CI's existing cache
-carries it between pipelines with no commit and no artifact) and reports three
-things against it: **new** on the wiki, **type changed**, and **no longer
+It keeps a snapshot (`drift_baseline.json`, committed; see below) and reports
+three things against it: **new** on the wiki, **type changed**, and **no longer
 found** — that last one usually meaning a rename, which is exactly when the
 `ALIASES` table goes stale. It fails only when something actually moved.
 
@@ -355,21 +367,12 @@ belongs in a diff. Clearing the alert is an explicit act —
 job having run. **Nothing in CI writes it.** A job that could silence its own
 alarm would make the alarm meaningless.
 
-This whole class of bug only appears when you *run* the thing: everything
-passed locally, because locally nothing fails.
-
 **`drift` and `accept` must call `harvest(max_age_days=0)`.** `harvest()` skips
 any page already in the cache — correct for local work, catastrophic for a
 scheduled check. The first scheduled run restored the CI cache, served all 68
 pages from it, fetched **zero**, and reported a confident *"Nothing changed on
 the wiki since the last run."* It would have said that forever. A green light
 wired to nothing is worse than no light: it actively tells you not to look.
-
-Note the irony worth remembering — the earlier *cache flakiness was hiding
-this*. While the cache failed to restore, every run re-downloaded and the check
-worked by accident. Fixing the cache broke the checker. When you fix an
-infrastructure problem, re-check the things that were silently depending on it
-being broken.
 
 Two guards go with it, because always-fetching introduces a failure mode that
 skip-if-present did not have. A page is written only on success, so a failed
@@ -413,8 +416,8 @@ character pages and the job announced that all 681 episode pages had been
 deleted from the wiki.
 
 That is the same confusion as the harvest outage guard, in a new costume:
-**"we did not look" is not "it is gone."** `revwatch` now only reports a page
-missing if it was in scope to begin with, says out loud how many it could not
+**"we did not look" is not "it is gone."** `revwatch` reports a page missing
+only if it was in scope to begin with, says out loud how many it could not
 check, and refuses outright if more than a fifth of the watched set comes back
 missing.
 
