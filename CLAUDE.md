@@ -383,6 +383,15 @@ as mass deletion. `accept` is stricter still: it refuses on *any* failure,
 since a baseline recorded from an incomplete harvest silently suppresses real
 alerts later.
 
+**`parse()` reads only today's seed pages, not the whole cache directory.** It
+used to read every `.wiki` file present, so what got parsed depended on which
+machine ran it. Renaming "Nora" to "Nora Young" dropped plain "Nora" (an
+unrelated woman married to Zachary) from the seeds, but her page stayed in the
+local cache. The local `accept` parsed it into the baseline, while CI, starting
+from an empty cache, never fetched it, and the next scheduled run reported
+*Nora & Zachary* as NO LONGER FOUND. Cached pages that are no longer in scope
+are now skipped, and `parse` names them.
+
 ## revwatch.py watches everything, cheaply
 
 The drift check only ever looked at character pages — the weaker source, whose

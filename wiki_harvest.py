@@ -419,10 +419,25 @@ def classify(qualifier: str, body: str) -> str:
     return "Dating"
 
 
-def parse() -> None:
-    rows = []
+def parse(titles=None) -> None:
+    """Parse the cached pages of `titles` (default: today's seeds).
+
+    Only pages still in scope, never everything that happens to be in the
+    cache. Renaming "Nora" to "Nora Young" took plain "Nora" -- an unrelated
+    woman married to Zachary -- off the seed list, but her page stayed in the
+    local cache, so a local `accept` parsed it into the baseline. CI starts
+    from an empty cache, never fetched her, and the next scheduled run
+    reported the tie NO LONGER FOUND. What gets parsed has to depend on the
+    seed list, not on the history of whichever machine ran it.
+    """
+    wanted = {os.path.basename(cache_file(t))
+              for t in (titles if titles is not None else seeds())}
+    rows, stale = [], []
     for fname in sorted(os.listdir(CACHE)):
         if not fname.endswith(".wiki"):
+            continue
+        if fname not in wanted:
+            stale.append(title_from_cache(fname))
             continue
         subject = title_from_cache(fname)
         text = open(os.path.join(CACHE, fname), encoding="utf-8").read()
@@ -469,6 +484,9 @@ def parse() -> None:
         writer.writeheader()
         writer.writerows(rows)
     print(f"wrote candidate_edges.csv: {len(rows)} candidate ties")
+    if stale:
+        print(f"NOTE: skipped {len(stale)} cached page(s) no longer on the seed "
+              f"list: {', '.join(stale)}")
 
 
 # --------------------------------------------------------------------------- #
@@ -661,7 +679,7 @@ def drift(edges_path="edges.csv", report="drift_report.md", refresh=True) -> int
         print(f"NOTE: {len(missing)} name(s) have no wiki article and are not "
               f"being watched. Add an ALIASES entry if the article exists under "
               f"another title: {', '.join(missing)}")
-    parse()
+    parse(all_seeds)
 
     mine = defaultdict(set)
     with open(edges_path, encoding="utf-8") as fh:
@@ -783,14 +801,15 @@ def accept(edges_path="edges.csv") -> int:
     the decision -- which is the point. Nothing in CI writes this file; if a job
     could clear its own alert, the alert would mean nothing.
     """
-    fetched, reused, missing, failed = harvest(seeds(edges_path), max_age_days=0)
+    all_seeds = seeds(edges_path)
+    fetched, reused, missing, failed = harvest(all_seeds, max_age_days=0)
     if failed:
         print(f"REFUSING to set a baseline: {len(failed)} page(s) failed to "
               f"fetch ({', '.join(failed)}). A baseline recorded from an "
               f"incomplete harvest would suppress real alerts later.",
               file=sys.stderr)
         return 2
-    parse()
+    parse(all_seeds)
     theirs = {}
     with open("candidate_edges.csv", encoding="utf-8") as fh:
         for row in csv.DictReader(fh):
