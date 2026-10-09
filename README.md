@@ -121,6 +121,8 @@ adds origin checks, a honeypot and per-IP rate limiting. Deploy it, set `RELAY`
 in `build_visualization.py` to its URL, and the form switches over. It is left
 off by default because it's a service to run, not a file to ship.
 
+A security problem goes privately instead, as [SECURITY.md](SECURITY.md) says.
+
 ## Sources & credit
 
 **The idea came from Dana's "romantic web" infographic**
