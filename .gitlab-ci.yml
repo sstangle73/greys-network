@@ -7,6 +7,10 @@
 # Splitting by language means each job uses an image that already has what it
 # needs, and neither installs a toolchain at all.
 
+# Images come from ECR Public's copy of the Docker Official Images (the same
+# names, tags and digests as Docker Hub's), outside Docker Hub's anonymous
+# pull limit.
+
 stages: [build, test, deploy]
 
 variables:
@@ -17,7 +21,7 @@ variables:
 # they exercise the same bytes, not their own rebuild.
 build:
   stage: build
-  image: python:3.12-slim
+  image: public.ecr.aws/docker/library/python:3.12-slim
   before_script:
     - pip install --quiet pandas
   script:
@@ -39,7 +43,8 @@ build:
 
 test:
   stage: test
-  image: node:20-slim
+  # Node 24, an LTS line with updates to 2028; node:20-slim gets no more builds.
+  image: public.ecr.aws/docker/library/node:24-slim
   needs: [build]
   # Keyed on the lockfile: a dependency change busts it, a data change does not.
   cache:
@@ -66,14 +71,14 @@ test:
 # the failure nothing downstream would ever report.
 grader:
   stage: test
-  image: python:3.12-slim
+  image: public.ecr.aws/docker/library/python:3.12-slim
   needs: []
   script:
     - python tests/test_revwatch.py
 
 pages:
   stage: deploy
-  image: python:3.12-slim
+  image: public.ecr.aws/docker/library/python:3.12-slim
   needs: [build, test]
   # Portraits are fetched here rather than committed, so the images live only in
   # the deployed artifact and never enter git history -- taking them down later
@@ -119,7 +124,7 @@ pages:
 # this needs no API token and no bot account.
 drift:
   stage: test
-  image: python:3.12-slim
+  image: public.ecr.aws/docker/library/python:3.12-slim
   needs: []
   cache:
     key: wikicache-v1
